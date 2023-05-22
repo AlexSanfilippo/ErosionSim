@@ -149,7 +149,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="local_headers\map.h" />
+    <ClInclude Include="local_headers\primative.h" />
     <ClInclude Include="local_headers\shader_s.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="3.3.shader.fs" />
+    <None Include="3.3.shader.vs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

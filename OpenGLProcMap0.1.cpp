@@ -142,28 +142,21 @@ int main()
     // ------------------------------------
     Shader ourShader("3.3.shader.vs", "3.3.shader.fs");
     
-    //Turtle turtle = Turtle(iteration, 1904); //create our initial turtle (and L-System)
-    //cout << "calling trutle growthStageDraw\n";
-    //turtle.growthStageDraw();
-    //cout << "after trutle growthStageDraw\n";
-    //turtle.draw3D(); //tell Turtle to generate vertices and indices   
-    //cout << "turtle drew " << turtle.numVertices/3 << " triangles. \n";
     
-    //get vertex info from the turtle and convert to CPP array
-    //vector<float> vertices_vec = turtle.getVertices();
-
-    unsigned int size = 128;
+    /*Map Properties*/
+    unsigned int size = 128*2;
     unsigned int octaves = 5; //LOWEST = 1
-    float smooth = 2.5; //higher -> bumpier.  closer to 0 -> flatter
+    float smooth = 5.5; //higher -> bumpier.  closer to 0 -> flatter
     int seed = 10362;
-    unsigned int frequency = 2; //cannot be under 2
+    unsigned int frequency = 3; //cannot be under 2
     int numMapVertices = size * size * 6;
-    float scale = 1.25f; //stretch map out over XZ plane while perserving hieght
+    float scale = 5.25f; //stretch map out over XZ plane while perserving height
     Map map = Map(seed, size, octaves, frequency, smooth, scale);
    
     //Wireframe or fill mode
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); //GL_FILL FOR SOLID POLYGONS GL_LINE FOR WIREFRAME
-    //chang provoking vertex
+
+    //change provoking vertex
     //glProvokingVertex(GL_FIRST_VERTEX_CONVENTION);
 
     vector <float> vertices_vec = map.getVertices();
@@ -179,29 +172,6 @@ int main()
 
     }
 
-    /*Normalized Map Colors*/
-    //colorMapNormals(vertices, verticesSize);
-
-    /*
-    //repeat for indices
-    //vector<unsigned int> indices_vec = turtle.getIndicesOrdered();
-    vector<unsigned int> indices_vec = turtle.getStageIndices(growthStage);
-    int indicesSize = indices_vec.size();
-    unsigned int* indices = new unsigned int[indicesSize];
-    //populate the indices array
-    for (int i = 0; i < indicesSize; i++) {
-        indices[i] = indices_vec[i];
-
-    }
-    */
-
-    
-      
-    
-    //unsigned int elmsToRender = turtle.numVertices; //for growth animation and debugging
-   // unsigned int elmsToRenderMax = turtle.numVertices; //nonchanging
-    //unsigned int elmsToRender = verticesSize; //for growth animation and debugging
-    //unsigned int elmsToRenderMax = verticesSize; //nonchanging
 
     unsigned int VBO, VAO;
     glGenVertexArrays(1, &VAO);
@@ -237,16 +207,7 @@ int main()
     glEnable(GL_DEPTH_TEST); //enable depth testing
 
 
-    //tree postions 
-    /*
-    glm::vec3 treePositions[] = {
-    glm::vec3(0.0f,  0.0f,  0.0f),
-    glm::vec3(15.0f,  0.0f,  -20.0f),
-    glm::vec3(30.0f,  0.0f,  -40.0f),
-    glm::vec3(-15.0f,  0.0f,  -20.0f),
-    glm::vec3(-30.0f,  0.0f,  -40.0f),
-    };
-    */
+    
     
 
 
@@ -257,38 +218,28 @@ int main()
         
         
         //the background color
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // old teal: 0.2f, 0.3f, 0.3f, 1.0f
+        glClearColor(0.2f, 0.3f, 0.5f, 1.0f); // old teal: 0.2f, 0.3f, 0.3f, 1.0f
 
         //clear the color and depth buffer
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
        
-        /*Spawn New Tree (Wrap into a function later on, this is messy*/   
+        /*Generate New Map */  
         if (changeMap) {
-            //cout << "trying to change map\n";
-            //changeMapFxn(size, octaves, frequency, smooth, scale);
+            
             changeMap = false;
 
-
-            //placeTriangle(); //TP
-            map.cleanUp(); 
+            map.cleanUp(); //prevent memory leak
             map.~Map();
             map = Map(time(NULL), size, octaves, frequency, smooth, scale);
-            //map.setup(); //called by constructor
+          
         }
        
         
 
-        
-
-        
-
-
         // camera/view transformation
         glm::mat4 view = ourCam.GetViewMatrix();
-      
-        
-
+ 
         /*Controlable Camera*/
         
         float currentFrame = static_cast<float>(glfwGetTime());
@@ -299,7 +250,7 @@ int main()
         // -----
         processInput(window);
 
-        glm::mat4 projection = glm::perspective(glm::radians(ourCam.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.001f, 100.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(ourCam.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.001f, 2000.0f);
         
         view = ourCam.GetViewMatrix();
         
@@ -311,7 +262,7 @@ int main()
             float camX = sin(glfwGetTime()*spinSpeed) * radius;
             float camZ = cos(glfwGetTime()*spinSpeed) * radius;
             
-            view = glm::lookAt(glm::vec3(camX, 40.0, camZ)/*Pos*/, glm::vec3(0.0, 19.0, 0.0)/*lookAt*/, glm::vec3(0.0, 1.0, 0.0));
+            view = glm::lookAt(glm::vec3(camX, 40.0, camZ)/*Pos*/, glm::vec3(0.0, 0.0, 0.0)/*lookAt*/, glm::vec3(0.0, 1.0, 0.0));
             
         }
         int viewLoc = glGetUniformLocation(ourShader.ID, "view");
@@ -326,7 +277,7 @@ int main()
         {
             glm::mat4 model = glm::mat4(1.0f);
             //model = glm::translate(model, treePositions[i]);
-            model = glm::translate(model, glm::vec3(0.0, -map.hMin*mapScaleY, 0.0)); //move map back to XZ plane
+            model = glm::translate(model, glm::vec3(-20.0, -map.hMin*mapScaleY, -20.0)); //move map back to XZ plane
             float angle = 0.0f;
                        
             model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
@@ -560,7 +511,7 @@ void colorMapNormals(float *vertices, int size) {
         }
     }
 }
-/*returns the normal of 3 vectors*/ //UNUSED
+/*returns the normal of 3 vectors*/ 
 glm::vec3 calcNormal(glm::vec3 a, glm::vec3 b, glm::vec3 c) {
     glm::vec3 u = b - a;
     glm::vec3 v = c - a;
@@ -569,13 +520,6 @@ glm::vec3 calcNormal(glm::vec3 a, glm::vec3 b, glm::vec3 c) {
     normal.x = 1*(u.y * v.z - u.z * v.y);
     normal.y = 1*(u.z * v.x - u.x * v.z);
     normal.z = 1*(u.x * v.y - u.y * v.x);
-
-    
-    //cout << "normal color is " << normal.x <<"," << normal.y <<"," << normal.z << endl;
-
-    // Set Normal.x to(multiply U.y by V.z) minus(multiply U.z by V.y)
-    //    Set Normal.y to(multiply U.z by V.x) minus(multiply U.x by V.z)
-     //   Set Normal.z to(multiply U.x by V.y) minus(multiply U.y by V.x)
 
     return normal;
 

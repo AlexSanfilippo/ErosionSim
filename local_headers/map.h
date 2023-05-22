@@ -110,6 +110,7 @@ public:
 			for (j = 0.0f; j < size-1; j++) { //was size -1
 				//cout << "j=" << j << endl;
 				if (triangleOrientation == 0) {
+					/*
 					//point A
 					vertices.push_back(i*spacing);
 					vertices.push_back(heights[i*size + j]); //height value
@@ -134,8 +135,46 @@ public:
 					vertices.push_back(colorMap(heights[(i + 1) * size + j]).x);
 					vertices.push_back(colorMap(heights[(i + 1) * size + j]).y);
 					vertices.push_back(colorMap(heights[(i + 1) * size + j]).z);
+					*/
+
+					//NORMAL VERSION
+					//a) calculate 3 vertices of this triangle
+					//b) calculate normal using the 3 vertices
+					//c) write both position and normal to "vertices"
+					vector <glm::vec3> tv(3); //temp vertices
+					//point A
+					tv[0].x = (i * spacing);
+					tv[0].y = (heights[i * size + j]); //height value
+					tv[0].z = (j * spacing);					
+					//point B
+					tv[1].x = (i * spacing);
+					tv[1].y = (heights[i * size + j + 1]); //height value
+					tv[1].z = ((j + 1.0f) * spacing);					
+					//Point C
+					tv[2].x = ((i + 1.0f) * spacing);
+					tv[2].y = (heights[(i + 1) * size + j]); //height value
+					tv[2].z = (j * spacing);
+					//normal calculation
+					vector <glm::vec3> tn(3); //temp normals
+					tn[0] = glm::normalize(calcNormal(tv[0], tv[2], tv[1])); //these may be wrong winding order, unsure
+					tn[1] = glm::normalize(calcNormal(tv[1], tv[0], tv[2]));
+					tn[2] = glm::normalize(calcNormal(tv[2], tv[1], tv[0]));
+					//Finally, store this info into vertices
+					for (int k = 0; k < 3; k++) { //per vertex
+						//add position
+						for (int m = 0; m < 3; m++) {
+							vertices.push_back(tv[k][m]);
+						}
+						//add normals
+						for (int m = 0; m < 3; m++) {
+							vertices.push_back(tn[k][m]);
+						}
+
+					}
+
 				}
 				else {
+					/*
 					//point D
 					vertices.push_back(i * spacing);
 					vertices.push_back(heights[i * size + j]); //height value
@@ -162,7 +201,44 @@ public:
 					vertices.push_back(colorMap(heights[(i - 1) * size + j + 1]).x);
 					vertices.push_back(colorMap(heights[(i - 1) * size + j + 1]).y);
 					vertices.push_back(colorMap(heights[(i - 1) * size + j + 1]).z);
+					*/
+
+					vector <glm::vec3> tv(3); //temp vertices
+					//point D
+					tv[0].x = (i * spacing);
+					tv[0].y = (heights[i * size + j]); //height value
+					tv[0].z = (j * spacing);
 					
+					//point E
+					tv[1].x = (i * spacing);
+					tv[1].y = (heights[i * size + j + 1]); //height value
+					tv[1].z = ((j + 1.0f) * spacing);
+					
+					//Point F
+					tv[2].x = ((i - 1.0f) * spacing);
+					tv[2].y = (heights[(i - 1) * size + j + 1]); //height value
+					tv[2].z = ((j + 1.0f) * spacing);
+					
+					//normal calculation
+					vector <glm::vec3> tn(3); //temp normals
+					tn[0] = glm::normalize(calcNormal(tv[0], tv[1], tv[2])); //these may be wrong winding order, unsure
+					tn[1] = glm::normalize(calcNormal(tv[1], tv[2], tv[0]));
+					tn[2] = glm::normalize(calcNormal(tv[2], tv[0], tv[1]));
+					//Finally, store this info into vertices
+					for (int k = 0; k < 3; k++) { //per vertex
+						//add position
+						for (int m = 0; m < 3; m++) {
+							vertices.push_back(tv[k][m]);
+						}
+						//add normals
+						//cout << "norm has values:  ";
+						for (int m = 0; m < 3; m++) {
+							vertices.push_back(tn[k][m]);
+							//cout << tn[k][m] << ", ";
+						}
+						//cout << endl;
+
+					}
 				}
 				
 			}
@@ -189,7 +265,7 @@ public:
 		}
 
 
-
+		//call setupMesh() to create OpenGL buffers
 		setupMesh();
 	}
 
@@ -415,6 +491,7 @@ public:
 		
 	}
 
+	/*probably not needed-Wrapper for setupMesh*/
 	void setup() {
 		setupMesh();
 	}
@@ -444,12 +521,26 @@ private:
 		// position attribute
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 		glEnableVertexAttribArray(0);
-		// color attribute
+		// normal attribute
 		glVertexAttribPointer(1/*location*/, 3/*number of values*/, GL_FLOAT, GL_FALSE, 6 * sizeof(float)/*size*/, (void*)(3 * sizeof(float))/*offset*/);
 		glEnableVertexAttribArray(1);
 
 
 		glBindVertexArray(0);
+	}
+
+	/*calculate normals for proper Phong lighting*/
+	glm::vec3 calcNormal(glm::vec3 A, glm::vec3 B, glm::vec3 C) {
+		glm::vec3 normal; //return variable: the normal of this triangle
+
+		glm::vec3 U(B.x - A.x, B.y - A.y, B.z - A.z);
+		glm::vec3 V(C.x - A.x, C.y - A.y, C.z - A.z);
+
+		normal.x = U.y * V.z - U.z * V.y;
+		normal.y = U.z * V.x - U.x * V.z;
+		normal.z = U.x * V.y - U.y * V.x;
+
+		return normal;
 	}
 };
 #endif
