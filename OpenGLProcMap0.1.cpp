@@ -36,6 +36,9 @@
 /*Map*/
 #include <local_headers/map.h>
 
+/*Compute Shader*/
+#include <local_headers/shader_c.h>
+
 //function headers
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -46,8 +49,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 //function headers-map part
 glm::vec3 calcNormal(glm::vec3 a, glm::vec3 b, glm::vec3 c);
 void colorMapNormals(float* vertices, int size);
-void changeMapFxn(unsigned int size, unsigned int octaves, unsigned int frequency, float smooth, float scale);
-void placeTriangle();
+//void changeMapFxn(unsigned int size, unsigned int octaves, unsigned int frequency, float smooth, float scale);
+//void placeTriangle();
 
 
 // settings
@@ -71,14 +74,14 @@ int numRectangles = 1;
 unsigned int numRectanglesMax;
 bool gotKey = false;
 
-bool rotateCamera = false;
+bool rotateCamera = true;
 
 //change tree color on press C
 int colorSetVal = 0;
 int colorSetChange = 0;
 
 //change camera rotation radius in-program UP and DOWN keys
-float radius = 60.0f;
+float radius = 180.0f;
 
 //Forr spawning new tree - change name later
 float stretch = 1.0f;
@@ -95,15 +98,27 @@ bool changeGrowthStage = false;
 
 //MAP
 float mapScale = 40.0;
-float mapScaleY = mapScale;
+float mapScaleY = mapScale*4.0f;
 bool changeMap = false;
+bool freqUp = false;
+bool freqDown = false;
+
+//
+struct mapStruct
+{
+    glm::vec3 pos;
+    float pad0;
+    glm::vec3 norm;
+    float pad1;
+};
+
 int main()
 {
     // glfw: initialize and configure
     // ------------------------------
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 #ifdef __APPLE__
@@ -138,63 +153,126 @@ int main()
         return -1;
     }
 
+
+    /*=======================Create Compute Shader========================*/
+
+    //construct compute shader object using our class
+    ComputeShader ourComputeShader("4.6.shader_ssbo.cs");
+
+    /*
+    //create the image object
+    // texture size
+    const unsigned int TEXTURE_WIDTH = 512, TEXTURE_HEIGHT = 512;
+    //...
+    unsigned int texture;
+
+    glGenTextures(1, &texture);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+
+    glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+    */
+
+
     // build and compile our shader program
     // ------------------------------------
     Shader ourShader("3.3.shader.vs", "3.3.shader.fs");
     
     
     /*Map Properties*/
-    unsigned int size = 128*2;
-    unsigned int octaves = 5; //LOWEST = 1
-    float smooth = 5.5; //higher -> bumpier.  closer to 0 -> flatter
-    int seed = 10362;
+    unsigned int size = 128; //resolution, 
+    unsigned int octaves = 6; //LOWEST = 1
+    float smooth = 3.5; //higher -> bumpier.  closer to 0 -> flatter
+    int seed = 10366;
     unsigned int frequency = 3; //cannot be under 2
-    int numMapVertices = size * size * 6;
+    int numMapVertices = size * size * 6; 
     float scale = 5.25f; //stretch map out over XZ plane while perserving height
     Map map = Map(seed, size, octaves, frequency, smooth, scale);
    
     //Wireframe or fill mode
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); //GL_FILL FOR SOLID POLYGONS GL_LINE FOR WIREFRAME
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); //GL_FILL FOR SOLID POLYGONS GL_LINE FOR WIREFRAME
 
     //change provoking vertex
     //glProvokingVertex(GL_FIRST_VERTEX_CONVENTION);
 
-    vector <float> vertices_vec = map.getVertices();
-    //vector<float> vertices_vec = turtle.getStageVertices(growthStage);
-    
-    //dynamically created array of vertices
-    int verticesSize = vertices_vec.size();
-    //cout << "in main(), verticesSize = " << verticesSize << endl;
-    float* vertices = new float[verticesSize];
-    //populate the vertices
-    for (int i = 0; i < verticesSize; i++) {
-        vertices[i] = vertices_vec[i];
-
+    //SSBO STUFF: Create & Fill a vector of structs to send to the SSBO in the compute shader
+    mapStruct* mapVertices = new mapStruct[numMapVertices];
+    int verticesCount = 0;
+    float* vertices = new float[numMapVertices]; //just heights
+    for (int i = 0; i < numMapVertices; i++) {
+        vector <float> vertexData = {0.0f,0.0f,0.0f,0.0f,0.0f,0.0f};
+        for (int j = 0; j < 6; j++) {
+            vertexData[j] = sin(i)*10;//map.verticesArray[i / 6 + j]; //VERY unsure this is correct
+        }
+        if (i < 40) {
+            cout << "vertexData[1] = " << vertexData[1] << endl;
+        }
+        mapVertices[i].pos.x = vertexData[0];
+        mapVertices[i].pos.y = vertexData[1]; //  1000*sin(i);
+        mapVertices[i].pos.z = vertexData[2];
+        mapVertices[i].norm.x = vertexData[3];
+        mapVertices[i].norm.y = vertexData[4];
+        mapVertices[i].norm.z = vertexData[5];
+        if (i < 40) {
+            cout << "mapVertices[i].pos.y = " << mapVertices[i].pos.y << endl;
+        }
+        vertices[0] = map.verticesArray[i];
     }
 
-
-    unsigned int VBO, VAO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
+    //Grab just the heights
+    float* justHeights = new float[size*size]; //just heights
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            justHeights[i*size + j] = 1.0f + sin(i) * 2.1f;//map.verticesArray[i];  //i * 6 + 1
+            //justHeights[i*size + j] = map.getHeight(i,j, mapScale);  //i * 6 + 1
+        }
+        
+    }
+    
+    //CREATE SSBO
+    //cout << "sizeof(mapVertices) = " << sizeof(mapVertices) << endl;
+    GLuint ssbo;
+    glGenBuffers(1, &ssbo);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo); //sizeof(verticesArray[0]) * verticesSize, &verticesArray[0]
+    //glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(mapVertices) , &mapVertices, GL_DYNAMIC_COPY); //send initial data to buffer (opt.)
+    //glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(mapVertices[0])*numMapVertices, &mapVertices[0], GL_DYNAMIC_COPY); //flat map
     
 
-    glBindVertexArray(VAO);
-  
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[0])* verticesSize, &vertices[0], GL_STATIC_DRAW);
+    //glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec3)*2*numMapVertices, &mapVertices[0], GL_DYNAMIC_COPY); //flat map
+
     
-    
-    
-    // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    // color attribute
-    /**/
-    glVertexAttribPointer(1/*location*/, 3/*number of values*/, GL_FLOAT/*d_type*/, GL_FALSE, 6 * sizeof(float)/*size*/, (void*)(3 * sizeof(float))/*offset*/);
-    glEnableVertexAttribArray(1);
-   
+    //glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(mapStruct) * numMapVertices, mapVertices, GL_DYNAMIC_COPY);
 
 
+    //we need a simplest cast SSBO to work before we can move forward
+    //glm::vec4 testVec = glm::vec4(.1f, -0.2f, 0.2f, 0.3f);
+    //glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4), &testVec, GL_DYNAMIC_COPY);
+
+    //sending Just Heights
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(justHeights), justHeights, GL_DYNAMIC_COPY);
+
+    //trying to directly send vertices
+    //glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_COPY);
+
+    //glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(map.verticesArray), map.verticesArray, GL_DYNAMIC_COPY);
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, ssbo); //necc
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    
+    
+
+
+    //unsure if this is neccessary
+    
+    GLuint block_index = 0;
+    block_index = glGetProgramResourceIndex(ourComputeShader.ID, GL_SHADER_STORAGE_BLOCK, "mapVertices");
+    GLuint ssbo_binding_point_index = 3;
+    glShaderStorageBlockBinding(ourComputeShader.ID, block_index, ssbo_binding_point_index);
     
 
     //[COORD SYS]
@@ -207,14 +285,16 @@ int main()
     glEnable(GL_DEPTH_TEST); //enable depth testing
 
 
-    
-    
 
+
+    
+    
 
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
     {
+        
         
         
         //the background color
@@ -223,6 +303,39 @@ int main()
         //clear the color and depth buffer
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+
+        //SSBO UPDATE
+        
+        
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+        GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_WRITE);
+        //memcpy(p, &mapVertices, sizeof(mapVertices));//sizeof(mapVertices[0]) * numMapVertices, &mapVertices[0]
+        //memcpy(p, &mapVertices[0], sizeof(mapVertices[0]) * numMapVertices);
+        //memcpy(p, &mapVertices[0], sizeof(glm::vec3) * 2 * numMapVertices);
+
+
+        //EXPERIMENTAL
+        //memcpy(p, &testVec, sizeof(glm::vec4));
+
+        //JUST HEIGHTS
+        memcpy(p, justHeights, sizeof(justHeights));
+
+        //memcpy(p, vertices, sizeof(vertices));
+
+        glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+        
+
+        /*COMPUTE SHADER*/ //need to change for SSBO
+        ourComputeShader.use();
+        //glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1); //how to change for ssbo?
+        glDispatchCompute(size*size/32,1,1);
+        // make sure writing to image has finished before read
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+
+
+
+        ourShader.use();
        
         /*Generate New Map */  
         if (changeMap) {
@@ -231,8 +344,36 @@ int main()
 
             map.cleanUp(); //prevent memory leak
             map.~Map();
-            map = Map(time(NULL), size, octaves, frequency, smooth, scale);
+            seed += 1;
+            map = Map(seed, size, octaves, frequency, smooth, scale);
           
+        }
+        if (freqDown) {
+
+            freqDown = false;
+
+            map.cleanUp(); //prevent memory leak
+            map.~Map();
+            if (frequency > 1) {
+                //frequency--;
+                size /= 2;
+                //octaves--;
+            }
+            
+            map = Map(seed, size, octaves, frequency, smooth, scale);
+
+        }
+        if (freqUp) {
+
+            freqUp = false;
+
+            map.cleanUp(); //prevent memory leak
+            map.~Map();
+            //frequency++;
+            size *= 2;
+            //octaves++;
+            map = Map(seed, size, octaves, frequency, smooth, scale);
+
         }
        
         
@@ -257,12 +398,12 @@ int main()
 
         /*Rotating Camera*/
         if (rotateCamera) {
-            radius;
+            //radius;
             float spinSpeed = 0.33;
             float camX = sin(glfwGetTime()*spinSpeed) * radius;
             float camZ = cos(glfwGetTime()*spinSpeed) * radius;
             
-            view = glm::lookAt(glm::vec3(camX, 40.0, camZ)/*Pos*/, glm::vec3(0.0, 0.0, 0.0)/*lookAt*/, glm::vec3(0.0, 1.0, 0.0));
+            view = glm::lookAt(glm::vec3(camX, 200.0, camZ)/*Pos*/, glm::vec3(0.0, 0.0, 0.0)/*lookAt*/, glm::vec3(0.0, 1.0, 0.0));
             
         }
         int viewLoc = glGetUniformLocation(ourShader.ID, "view");
@@ -271,13 +412,13 @@ int main()
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
         
         
-        glBindVertexArray(VAO);
+        //glBindVertexArray(VAO);
         float timeVar = 1.0f *  (float)glfwGetTime();
         for (unsigned int i = 0; i < 1; i++)
         {
             glm::mat4 model = glm::mat4(1.0f);
             //model = glm::translate(model, treePositions[i]);
-            model = glm::translate(model, glm::vec3(-20.0, -map.hMin*mapScaleY, -20.0)); //move map back to XZ plane
+            model = glm::translate(model, glm::vec3(-mapScale*2.3, -map.hMin*mapScaleY, -mapScale*2.3)); //move map back to XZ plane
             float angle = 0.0f;
                        
             model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
@@ -286,8 +427,15 @@ int main()
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
             ourShader.use();
-            glBindVertexArray(VAO);
+            //glBindVertexArray(VAO);
          
+
+            float timeValue = glfwGetTime();
+            //float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
+            int TIME = glGetUniformLocation(ourShader.ID, "time");
+            //(ourProgram);
+            glUniform1f(TIME, timeValue);
+
             ///glDrawElements(GL_TRIANGLES, 6*numRectangles /*num vertices*/, GL_UNSIGNED_INT, 0);
             //glDrawArrays(GL_TRIANGLES, 0, numMapVertices/*num vertices*/);
             map.draw(ourShader);
@@ -304,11 +452,11 @@ int main()
 
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
+    //glDeleteVertexArrays(1, &VAO);
+    //glDeleteBuffers(1, &VBO);
 
     //clear dynamically allocated resources
-    delete[] vertices; 
+    //delete[] vertices; 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
     glfwTerminate();
@@ -407,26 +555,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         changeMap = true;
        
     }
-    //animate tree growth by increase scale over time
-    if (key == GLFW_KEY_G && action == GLFW_PRESS)
-    {
-        scale = 0.000;  //
-        
-        doAnimate = true;
-        numRectangles = 0;
-    }
     //increase growth 
     if (key == GLFW_KEY_N && action == GLFW_PRESS)
     {
-        changeGrowthStage = true;
-        if(growthStage > 0)
-            growthStage -= 1;       
+        freqDown = true;
     }
     if (key == GLFW_KEY_M && action == GLFW_PRESS)
     {
-        changeGrowthStage = true;
-        if(growthStage < 6)
-            growthStage += 1;
+        freqUp = true;
     }
     if (key == GLFW_KEY_Y && action == GLFW_PRESS)
     {
