@@ -64,7 +64,7 @@ float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
 /*[CAMERA] Create Camera Object*/
 // camera
-Camera ourCam = Camera(glm::vec3(0.0f, 13.0f, 35.0f));
+Camera ourCam = Camera(glm::vec3(0.0f, 130.0f, 35.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -157,8 +157,9 @@ int main()
     /*=======================Create Compute Shader========================*/
 
     //construct compute shader object using our class
-    ComputeShader ourComputeShader("4.6.shader_ssbo.cs");
-
+    ComputeShader ourComputeShader3_1("4.6.shader3.1.cs");
+    ComputeShader ourComputeShader3_2("4.6.shader3.2.cs");
+    ComputeShader ourComputeShader3_2b("4.6.shader3.2.b.cs");
     /*
     //create the image object
     // texture size
@@ -186,12 +187,24 @@ int main()
     
     /*Map Properties*/
     unsigned int size = 128; //resolution, 
-    unsigned int octaves = 6; //LOWEST = 1
+    unsigned int octaves = 7; //LOWEST = 1
     float smooth = 3.5; //higher -> bumpier.  closer to 0 -> flatter
-    int seed = 10366;
+    int seed = 1998; //2000  //10366
     unsigned int frequency = 3; //cannot be under 2
-    int numMapVertices = size * size * 6; 
+    int numMapVertices = size * size * 6;
     float scale = 5.25f; //stretch map out over XZ plane while perserving height
+
+    bool getUserInput = false;
+    if (getUserInput) {
+        cout << "ENTER SIZE: ";
+        cin >> size;
+        cout << "ENTER : OCTAVES";
+        cin >> octaves;
+        cout << "ENTER : SEED";
+        cin >> seed;
+        cout << "\n~~~Generating Map...~~~\n";
+    }
+    
     Map map = Map(seed, size, octaves, frequency, smooth, scale);
    
     //Wireframe or fill mode
@@ -207,10 +220,10 @@ int main()
     for (int i = 0; i < numMapVertices; i++) {
         vector <float> vertexData = {0.0f,0.0f,0.0f,0.0f,0.0f,0.0f};
         for (int j = 0; j < 6; j++) {
-            vertexData[j] = sin(i)*10;//map.verticesArray[i / 6 + j]; //VERY unsure this is correct
+            vertexData[j] = sin(i)*10.f;//map.verticesArray[i / 6 + j]; //VERY unsure this is correct
         }
         if (i < 40) {
-            cout << "vertexData[1] = " << vertexData[1] << endl;
+            //cout << "vertexData[1] = " << vertexData[1] << endl;
         }
         mapVertices[i].pos.x = vertexData[0];
         mapVertices[i].pos.y = vertexData[1]; //  1000*sin(i);
@@ -219,61 +232,107 @@ int main()
         mapVertices[i].norm.y = vertexData[4];
         mapVertices[i].norm.z = vertexData[5];
         if (i < 40) {
-            cout << "mapVertices[i].pos.y = " << mapVertices[i].pos.y << endl;
+            //cout << "mapVertices[i].pos.y = " << mapVertices[i].pos.y << endl;
         }
         vertices[0] = map.verticesArray[i];
     }
 
-    //Grab just the heights
+    //Grab just the heights -this runs without crashing, but displays an incorrect height map
+    
     float* justHeights = new float[size*size]; //just heights
+
+    
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
-            justHeights[i*size + j] = 1.0f + sin(i) * 2.1f;//map.verticesArray[i];  //i * 6 + 1
-            //justHeights[i*size + j] = map.getHeight(i,j, mapScale);  //i * 6 + 1
-        }
-        
+            //justHeights[i*size + j] = 1.0f + sin(float(j)) * .1f; //result: flat map
+            //justHeights[i * size + j] = map.getHeight(i, j, mapScale);  //not correct height values
+            justHeights[i * size + j] = map.heights[i * size + j]; //normalized height values [0,1]
+            //justHeights[i * size + j*4 + 1] = 0.0f; //g
+            //justHeights[i * size + j*4 + 2] = 0.0f;  //b
+            //justHeights[i * size + j*4 + 3] = 0.0f;  //a
+            //j += 3;
+            //cout << "height = " << justHeights[i * size + j] << endl;
+            
+        }        
     }
+
+    //DISCREPENCY DETECTED
+    /*
+    cout << "map.heights: justHeights\n\n";
+    for (int i = 0; i < map.heights.size(); i++) {
+        cout << map.heights[i] << "  :  " << justHeights[i] << endl;
+    }
+    */
+
     
-    //CREATE SSBO
-    //cout << "sizeof(mapVertices) = " << sizeof(mapVertices) << endl;
+    
+    cout << "heights.size() = " << map.heights.size() << endl;
+    cout << "vertices.size() = " << map.vertices.size() << endl;
+
+  
+
+    //WRITE HEIGHT DATA TO A TEXTURE (ATTEMPT)
+    // texture size
+    const unsigned int TEXTURE_WIDTH = size, TEXTURE_HEIGHT = size;
+    //...
+    unsigned int texture0;
+
+    glGenTextures(1, &texture0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture0);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    /*
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA,
+        GL_FLOAT, justHeights);
+    */
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RED,
+        GL_FLOAT, justHeights);
+    glBindImageTexture(0, texture0, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+
+    unsigned int texture1;
+
+    glGenTextures(1, &texture1);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, texture1);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RED,
+        GL_FLOAT, NULL);
+    glBindImageTexture(1, texture1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+
+    unsigned int texture2;
+
+    glGenTextures(1, &texture2);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, texture2);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RED,
+        GL_FLOAT, NULL);
+    glBindImageTexture(2, texture2, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+    
+    
+    //CREATE SSBO -- not used
+    /*
     GLuint ssbo;
     glGenBuffers(1, &ssbo);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo); //sizeof(verticesArray[0]) * verticesSize, &verticesArray[0]
-    //glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(mapVertices) , &mapVertices, GL_DYNAMIC_COPY); //send initial data to buffer (opt.)
-    //glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(mapVertices[0])*numMapVertices, &mapVertices[0], GL_DYNAMIC_COPY); //flat map
-    
-
-    //glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec3)*2*numMapVertices, &mapVertices[0], GL_DYNAMIC_COPY); //flat map
-
-    
-    //glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(mapStruct) * numMapVertices, mapVertices, GL_DYNAMIC_COPY);
-
-
-    //we need a simplest cast SSBO to work before we can move forward
-    //glm::vec4 testVec = glm::vec4(.1f, -0.2f, 0.2f, 0.3f);
-    //glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4), &testVec, GL_DYNAMIC_COPY);
-
-    //sending Just Heights
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(justHeights), justHeights, GL_DYNAMIC_COPY);
-
-    //trying to directly send vertices
-    //glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_COPY);
-
-    //glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(map.verticesArray), map.verticesArray, GL_DYNAMIC_COPY);
-
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, ssbo); //necc
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-    
-    
-
-
-    //unsure if this is neccessary
-    
+    //unsure if this is neccessary   
     GLuint block_index = 0;
     block_index = glGetProgramResourceIndex(ourComputeShader.ID, GL_SHADER_STORAGE_BLOCK, "mapVertices");
     GLuint ssbo_binding_point_index = 3;
     glShaderStorageBlockBinding(ourComputeShader.ID, block_index, ssbo_binding_point_index);
-    
+    */
 
     //[COORD SYS]
     //3D projection
@@ -305,37 +364,36 @@ int main()
 
 
         //SSBO UPDATE
-        
-        
+        /*
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
         GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_WRITE);
-        //memcpy(p, &mapVertices, sizeof(mapVertices));//sizeof(mapVertices[0]) * numMapVertices, &mapVertices[0]
-        //memcpy(p, &mapVertices[0], sizeof(mapVertices[0]) * numMapVertices);
-        //memcpy(p, &mapVertices[0], sizeof(glm::vec3) * 2 * numMapVertices);
-
-
-        //EXPERIMENTAL
-        //memcpy(p, &testVec, sizeof(glm::vec4));
-
-        //JUST HEIGHTS
         memcpy(p, justHeights, sizeof(justHeights));
-
-        //memcpy(p, vertices, sizeof(vertices));
-
         glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-        
+        */
 
         /*COMPUTE SHADER*/ //need to change for SSBO
-        ourComputeShader.use();
-        //glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1); //how to change for ssbo?
-        glDispatchCompute(size*size/32,1,1);
+        ourComputeShader3_1.use();
+        glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1); 
+        //glDispatchCompute(32,1,1);
         // make sure writing to image has finished before read
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+        //second comp shader     (3.2 in 3 passes)   
+        ourComputeShader3_2.use();
+        glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1); 
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        ourComputeShader3_2b.use();
+        glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1); 
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 
 
-
         ourShader.use();
+
+        //BIND HEIGHT TEXTURE
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture0);
+
        
         /*Generate New Map */  
         if (changeMap) {

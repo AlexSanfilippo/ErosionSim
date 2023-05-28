@@ -43,6 +43,8 @@ public:
 	
 	vector <float> heights;
 
+	vector <float> heightsImage;
+
 	
 
 	//Mesh drawing
@@ -94,6 +96,8 @@ public:
 				}
 			}
 		}
+		
+
 		//cout << "applied octaves\n";
 		
 		//cout << "MAX HEIGHT " << hMax << ",  MIN HEIGHT " << hMin << endl;
@@ -110,32 +114,7 @@ public:
 			for (j = 0.0f; j < size-1; j++) { //was size -1
 				//cout << "j=" << j << endl;
 				if (triangleOrientation == 0) {
-					/*
-					//point A
-					vertices.push_back(i*spacing);
-					vertices.push_back(heights[i*size + j]); //height value
-					vertices.push_back(j * spacing);
-					//COLOR ATTRIBUTE
-					vertices.push_back(colorMap(heights[i * size + j]).x);
-					vertices.push_back(colorMap(heights[i * size + j]).y);
-					vertices.push_back(colorMap(heights[i * size + j]).z);
-					//point B
-					vertices.push_back(i * spacing);
-					vertices.push_back(heights[i * size + j + 1]); //height value
-					vertices.push_back((j + 1.0f) * spacing);
-					//COLOR ATTRIBUTE
-					vertices.push_back(colorMap(heights[i * size + j + 1]).x);
-					vertices.push_back(colorMap(heights[i * size + j + 1]).y);
-					vertices.push_back(colorMap(heights[i * size + j + 1]).z);
-					//Point C
-					vertices.push_back((i + 1.0f) * spacing);
-					vertices.push_back(heights[(i+1) * size + j]); //height value
-					vertices.push_back(j * spacing);
-					//COLOR ATTRIBUTE
-					vertices.push_back(colorMap(heights[(i + 1) * size + j]).x);
-					vertices.push_back(colorMap(heights[(i + 1) * size + j]).y);
-					vertices.push_back(colorMap(heights[(i + 1) * size + j]).z);
-					*/
+					
 
 					//NORMAL VERSION
 					//a) calculate 3 vertices of this triangle
@@ -145,20 +124,28 @@ public:
 					//point A
 					tv[0].x = (i * spacing);
 					tv[0].y = (heights[i * size + j]); //height value
+					heightsImage.push_back((heights[i * size + j]));
 					tv[0].z = (j * spacing);					
 					//point B
 					tv[1].x = (i * spacing);
 					tv[1].y = (heights[i * size + j + 1]); //height value
+					heightsImage.push_back(heights[i * size + j + 1]);
 					tv[1].z = ((j + 1.0f) * spacing);					
 					//Point C
 					tv[2].x = ((i + 1.0f) * spacing);
 					tv[2].y = (heights[(i + 1) * size + j]); //height value
+					heightsImage.push_back(heights[(i + 1) * size + j]);
 					tv[2].z = (j * spacing);
 					//normal calculation
 					vector <glm::vec3> tn(3); //temp normals
 					tn[0] = glm::normalize(calcNormal(tv[0], tv[2], tv[1])); //these may be wrong winding order, unsure
 					tn[1] = glm::normalize(calcNormal(tv[1], tv[0], tv[2]));
 					tn[2] = glm::normalize(calcNormal(tv[2], tv[1], tv[0]));
+					//texCoord calculation
+					vector <glm::vec2> ttc(3); //temp normals
+					ttc[0] = glm::vec2(float(i) / float(size-1), float(j) / float(size-1)); //A
+					ttc[1] = glm::vec2(float(i) / float(size-1), float(j + 1) / float(size-1)); //B
+					ttc[2] = glm::vec2(float(i + 1) / float(size-1), float(j) / float(size-1)); //C
 					//Finally, store this info into vertices
 					for (int k = 0; k < 3; k++) { //per vertex
 						//add position
@@ -169,54 +156,33 @@ public:
 						for (int m = 0; m < 3; m++) {
 							vertices.push_back(tn[k][m]);
 						}
-
+						//add texture coordinates	
+						for (int m = 0; m < 2; m++) {
+							vertices.push_back(ttc[k][m]);
+						}
 					}
 
 				}
 				else {
-					/*
-					//point D
-					vertices.push_back(i * spacing);
-					vertices.push_back(heights[i * size + j]); //height value
-					vertices.push_back(j * spacing);
-					//COLOR ATTRIBUTE
-					vertices.push_back(colorMap(heights[i * size + j]).x);
-					vertices.push_back(colorMap(heights[i * size + j]).y);
-					vertices.push_back(colorMap(heights[i * size + j]).z);
 					
-					//point E
-					vertices.push_back(i * spacing);
-					vertices.push_back(heights[i * size + j + 1]); //height value
-					vertices.push_back((j + 1.0f) * spacing);
-					//COLOR ATTRIBUTE
-					vertices.push_back(colorMap(heights[i * size + j + 1]).x);
-					vertices.push_back(colorMap(heights[i * size + j + 1]).y);
-					vertices.push_back(colorMap(heights[i * size + j + 1]).z);
-					
-					//Point F
-					vertices.push_back((i - 1.0f) * spacing);
-					vertices.push_back(heights[(i-1) * size + j + 1]); //height value
-					vertices.push_back((j + 1.0f) * spacing);
-					//COLOR ATTRIBUTE
-					vertices.push_back(colorMap(heights[(i - 1) * size + j + 1]).x);
-					vertices.push_back(colorMap(heights[(i - 1) * size + j + 1]).y);
-					vertices.push_back(colorMap(heights[(i - 1) * size + j + 1]).z);
-					*/
 
 					vector <glm::vec3> tv(3); //temp vertices
 					//point D
 					tv[0].x = (i * spacing);
 					tv[0].y = (heights[i * size + j]); //height value
+					heightsImage.push_back(heights[i * size + j]);
 					tv[0].z = (j * spacing);
 					
 					//point E
 					tv[1].x = (i * spacing);
 					tv[1].y = (heights[i * size + j + 1]); //height value
+					heightsImage.push_back(heights[i * size + j + 1]);
 					tv[1].z = ((j + 1.0f) * spacing);
 					
 					//Point F
 					tv[2].x = ((i - 1.0f) * spacing);
 					tv[2].y = (heights[(i - 1) * size + j + 1]); //height value
+					heightsImage.push_back(heights[(i - 1) * size + j + 1]);
 					tv[2].z = ((j + 1.0f) * spacing);
 					
 					//normal calculation
@@ -224,6 +190,13 @@ public:
 					tn[0] = glm::normalize(calcNormal(tv[0], tv[1], tv[2])); //these may be wrong winding order, unsure
 					tn[1] = glm::normalize(calcNormal(tv[1], tv[2], tv[0]));
 					tn[2] = glm::normalize(calcNormal(tv[2], tv[0], tv[1]));
+
+					//texCoord calculation
+					vector <glm::vec2> ttc(3); //temp normals					
+					ttc[0] = glm::vec2(float(i)/float(size-1), float(j) / float(size-1)); //D
+					ttc[1] = glm::vec2(float(i) / float(size-1), float(j+1) / float(size-1)); //E
+					ttc[2] = glm::vec2(float(i - 1) / float(size-1), float(j+1) / float(size-1)); //F
+
 					//Finally, store this info into vertices
 					for (int k = 0; k < 3; k++) { //per vertex
 						//add position
@@ -236,7 +209,14 @@ public:
 							vertices.push_back(tn[k][m]);
 							//cout << tn[k][m] << ", ";
 						}
-						//cout << endl;
+						
+						//add texture coordinates	
+						for (int m = 0; m < 2; m++) {
+							vertices.push_back(ttc[k][m]);
+						}
+						//vertices.push_back(float(i)/float(size));
+						//vertices.push_back(float(j)/float(size-1));
+						
 
 					}
 				}
@@ -519,11 +499,14 @@ private:
 		// set the vertex attribute pointers
 		
 		// position attribute
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 		glEnableVertexAttribArray(0);
 		// normal attribute
-		glVertexAttribPointer(1/*location*/, 3/*number of values*/, GL_FLOAT, GL_FALSE, 6 * sizeof(float)/*size*/, (void*)(3 * sizeof(float))/*offset*/);
+		glVertexAttribPointer(1/*location*/, 3/*number of values*/, GL_FLOAT, GL_FALSE, 8 * sizeof(float)/*size*/, (void*)(3 * sizeof(float))/*offset*/);
 		glEnableVertexAttribArray(1);
+		// text coord attribute
+		glVertexAttribPointer(2/*location*/, 2/*number of values*/, GL_FLOAT, GL_FALSE, 8 * sizeof(float)/*size*/, (void*)(6 * sizeof(float))/*offset*/);
+		glEnableVertexAttribArray(2);
 
 
 		glBindVertexArray(0);

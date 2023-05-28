@@ -1,7 +1,7 @@
 # version 460 core
 
 
-layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 //define an SSBO storage block to store the height map data
 struct mapStruct
@@ -35,7 +35,7 @@ void main()
 	//hMap.ms[0] += -1;
 	
 
-	//hMap.testVec[gl_GlobalInvocationID.x] *= 1.00f;
+	//hMap.testVec[gl_GlobalInvocationID.x] = 1.00f;
 
 	//hMap.testVec[0] = gl_GlobalInvocationID.x;
 
