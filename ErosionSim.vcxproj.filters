@@ -52,5 +52,29 @@
     <None Include="4.6.shader_ssbo.cs">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="4.6.shader3.2.c.cs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="4.6.shader3.5.cs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="4.6.shader3.1.cs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="4.6.shader3.2.b.cs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="4.6.shader3.3.cs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="4.6.shader3.4.cs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="4.6.shader3.2.cs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="4.6.shaderNormals.cs">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -12,7 +12,7 @@
 layout(rgba32f, binding = 0) uniform image2D imgOutput0; //changing binding to change image: 0, 2, or 3
 layout(rgba32f, binding = 1) uniform image2D imgOutput1; //flux (outflow)
 //layout(rgba32f, binding = 2) uniform image2D imgOutput2; //velocity
-
+uniform float size;
 void main()
 {
     vec4 value = vec4(0.0, 0.0, 0.0, 1.0);
@@ -49,8 +49,37 @@ void main()
         float d_h = rgba.r + rgba.g - (rgba_1.r + rgba_1.g); //height difference
         //tp
         lrtb[i] = max(0.0f, lrtb[i] + dT * A * (g * d_h)/(l)); //
+
+        
+
         sumLRTB += lrtb[i];
     }
+
+    //NO_SLIP BOUNDARY
+    /*
+    if (texelCoord.y >= size-1)
+    {
+        sumLRTB -= lrtb.b;
+        lrtb.b = 0.0f;
+    }
+    if (texelCoord.y <= 0)
+    {
+        sumLRTB -= lrtb.a;
+        lrtb.a = 0.0f;
+    }
+    if (texelCoord.x >= size - 1)
+    {
+        sumLRTB -= lrtb.g;
+        lrtb.g = 0.0f;
+    }
+    if (texelCoord.x <= 0)
+    {
+        sumLRTB -= lrtb.r;
+        lrtb.r = 0.0f;
+    }
+    */
+
+
     float lX = 1.0f; 
     float lY = 1.0f; //distance between cells in X and Y directions --UNSURE OF VALUES
     //calculate and factor in scaling factor K

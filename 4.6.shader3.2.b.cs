@@ -76,11 +76,12 @@ void main()
     */
     //eqn 7: update water height wrt water in/out flow dV
     float d2 = rgba.g + dV / (lX * lY); //ISSUE dV == 0.0f
-    //float d1 = rgba.g;
+    float d1 = rgba.g;
     value.x = rgba.r;
-    value.y = d2;
+    rgba.g = d2;
+    rgba.a = d1;
 
-    imageStore(imgOutput0, texelCoord, value); //b,d,s
+    imageStore(imgOutput0, texelCoord, rgba); //b,d,s
     imageStore(imgOutput1, texelCoord, lrtb); //flux
     imageStore(imgOutput2, texelCoord, v); //water velocity
 }

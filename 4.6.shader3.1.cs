@@ -16,6 +16,7 @@ layout(rgba32f, binding = 0) uniform image2D imgOutput; //changing binding to ch
 float random(vec2 st){
     return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
 }
+uniform float time;
 
 //euclidean distance between two 2D vectors
 float distance(vec2 v1, vec2 v2)
@@ -40,20 +41,20 @@ void main()
   
     value.x = rgba.x;
 
-    float dT = 1.0f; //time step
+    float dT = 0.55f; //time step
 
     //RAIN 
-    //value.y = rgba.y + dT * random(rgba.xy);  //pseudo-random rain
+    //value.y = rgba.y + dT * 0.00001f * random(vec2(rgba.x*time, rgba.y*(time+1)));  //pseudo-random rain
 
     //WATER SOURCE
-    vec2 source = vec2(0.9f, 0.9f); //pos of water source- norm coords in [0,1]
+    //vec2 source = vec2((0.15f*sin(time) + 0.5), (0.15f*cos(time) + 0.5)); //pos of water source- norm coords in [0,1] FOR DEMO: 0.9, 0.9
+    vec2 source = vec2(0.5f, 0.5f);
     float radius = 0.05f; //radius of water source, square map side length = 2.0f
     float strength = 0.1f; //how much water to add //very unsure how strong this is, probably want value < 1.0f
     float MAXWATER = 0.3f;
     value.y = min(rgba.y + dT*strength * max(0.0f, radius - distance(source, normCoord)), MAXWATER);
 
-    //testing g channel
-    //value.y = rgba.g + 1.0f;
+    
   
 
     //write to image, at this texelCoord, the 4f vector of color data

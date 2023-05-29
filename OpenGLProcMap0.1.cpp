@@ -74,7 +74,7 @@ int numRectangles = 1;
 unsigned int numRectanglesMax;
 bool gotKey = false;
 
-bool rotateCamera = true;
+bool rotateCamera = false;
 
 //change tree color on press C
 int colorSetVal = 0;
@@ -102,6 +102,9 @@ float mapScaleY = mapScale*4.0f;
 bool changeMap = false;
 bool freqUp = false;
 bool freqDown = false;
+
+//SIM CONTROLS
+bool pauseSim = true;
 
 //
 struct mapStruct
@@ -160,6 +163,11 @@ int main()
     ComputeShader ourComputeShader3_1("4.6.shader3.1.cs");
     ComputeShader ourComputeShader3_2("4.6.shader3.2.cs");
     ComputeShader ourComputeShader3_2b("4.6.shader3.2.b.cs");
+    ComputeShader ourComputeShader3_2c("4.6.shader3.2.c.cs");
+    ComputeShader ourComputeShader3_3("4.6.shader3.3.cs");
+    ComputeShader ourComputeShader3_4("4.6.shader3.4.cs");
+    ComputeShader ourComputeShader3_5("4.6.shader3.5.cs");
+    ComputeShader ourComputeShaderNormals("4.6.shaderNormals.cs");
     /*
     //create the image object
     // texture size
@@ -189,7 +197,7 @@ int main()
     unsigned int size = 128; //resolution, 
     unsigned int octaves = 7; //LOWEST = 1
     float smooth = 3.5; //higher -> bumpier.  closer to 0 -> flatter
-    int seed = 1998; //2000  //10366
+    int seed = 12478; //2000  //10366 //1998 for reddit demo (1999 is nice too) //3002 nice lake //1245 nice river
     unsigned int frequency = 3; //cannot be under 2
     int numMapVertices = size * size * 6;
     float scale = 5.25f; //stretch map out over XZ plane while perserving height
@@ -317,6 +325,20 @@ int main()
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RED,
         GL_FLOAT, NULL);
     glBindImageTexture(2, texture2, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+
+    //This Texture stores vertex normals in the rgb channels.  a is zero
+    unsigned int texture3;
+
+    glGenTextures(1, &texture3);
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, texture3);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RED,
+        GL_FLOAT, NULL);
+    glBindImageTexture(3, texture3, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
     
     
     //CREATE SSBO -- not used
@@ -371,29 +393,69 @@ int main()
         glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
         */
 
-        /*COMPUTE SHADER*/ //need to change for SSBO
-        ourComputeShader3_1.use();
-        glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1); 
-        //glDispatchCompute(32,1,1);
-        // make sure writing to image has finished before read
-        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        if (!pauseSim) {
+            /*COMPUTE SHADER*/ //need to change for SSBO
+            ourComputeShader3_1.use();
 
-        //second comp shader     (3.2 in 3 passes)   
-        ourComputeShader3_2.use();
-        glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1); 
-        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-        ourComputeShader3_2b.use();
-        glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1); 
-        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+            //time for random rain
+            float timeValue = glfwGetTime();           
+            int TIME = glGetUniformLocation(ourComputeShader3_1.ID, "time");
+            glUniform1f(TIME, timeValue);
+
+            glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+            //glDispatchCompute(32,1,1);
+            // make sure writing to image has finished before read
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        }
+            //second comp shader     (3.2 in 3 passes)   
+            ourComputeShader3_2.use();
+            //time for random rain
+            //float timeValue = glfwGetTime();
+            int SIZE = glGetUniformLocation(ourComputeShader3_2.ID, "size");
+            glUniform1f(SIZE, size);
+            glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+            ourComputeShader3_2b.use();
+            glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+            ourComputeShader3_2c.use();
+            glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+            
+            ourComputeShader3_3.use();
+            glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+            
+            ourComputeShader3_4.use();
+            glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+            
+
+            ourComputeShader3_5.use();
+            glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+            //Calculate normals of map shader -- change to not update every loop later on
+            ourComputeShaderNormals.use();
+            glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        
 
 
+        
 
         ourShader.use();
+
+
 
         //BIND HEIGHT TEXTURE
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture0);
-
+        //BIND NORMAL VECTOR TEXTURE
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, texture3);   //VS NOT READING THIS
+        
        
         /*Generate New Map */  
         if (changeMap) {
@@ -598,6 +660,16 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             rotateCamera = true;
         }
         
+    }
+    if (key == GLFW_KEY_P && action == GLFW_PRESS)
+    {
+        if (pauseSim == true) {
+            pauseSim = false;
+        }
+        else {
+            pauseSim = true;
+        }
+
     }
     if (key == GLFW_KEY_UP && action == GLFW_PRESS)
     {
