@@ -157,6 +157,15 @@ int main()
     }
 
 
+
+    /*TESTING OUR NORMAL FUNCTION*/
+    glm::vec3 A = glm::vec3(0.2f);
+    glm::vec3 B = glm::vec3(0.3f);
+    glm::vec3 C = glm::vec3(0.5f, 0.5f, 0.2f);
+    glm::vec3 norm = calcNormal(A, B, C);
+    norm = norm / sqrt(norm.x * norm.x + norm.y * norm.y + norm.z + norm.z);
+    cout << "norm = " << norm.x << ", " << norm.y << "," << norm.z << endl;
+
     /*=======================Create Compute Shader========================*/
 
     //construct compute shader object using our class
@@ -195,12 +204,12 @@ int main()
     
     /*Map Properties*/
     unsigned int size = 128; //resolution, 
-    unsigned int octaves = 7; //LOWEST = 1
+    unsigned int octaves = 5; //LOWEST = 1
     float smooth = 3.5; //higher -> bumpier.  closer to 0 -> flatter
-    int seed = 12478; //2000  //10366 //1998 for reddit demo (1999 is nice too) //3002 nice lake //1245 nice river
+    int seed = 1245; //2000  //10366 //1998 for reddit demo (1999 is nice too) //12478 nice lake //1245 nice river
     unsigned int frequency = 3; //cannot be under 2
     int numMapVertices = size * size * 6;
-    float scale = 5.25f; //stretch map out over XZ plane while perserving height
+    float scale = 10.25f; //stretch map out over XZ plane while perserving height
 
     bool getUserInput = false;
     if (getUserInput) {
@@ -248,7 +257,7 @@ int main()
     //Grab just the heights -this runs without crashing, but displays an incorrect height map
     
     float* justHeights = new float[size*size]; //just heights
-
+    float* initVel = new float[size * size]; //initial velocity set to 0
     
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
@@ -261,6 +270,7 @@ int main()
             //j += 3;
             //cout << "height = " << justHeights[i * size + j] << endl;
             
+            initVel[i * size + j] = 0.0f;
         }        
     }
 
@@ -310,7 +320,7 @@ int main()
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RED,
-        GL_FLOAT, NULL);
+        GL_FLOAT, initVel);
     glBindImageTexture(1, texture1, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 
     unsigned int texture2;
@@ -323,7 +333,7 @@ int main()
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RED,
-        GL_FLOAT, NULL);
+        GL_FLOAT, initVel);
     glBindImageTexture(2, texture2, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 
     //This Texture stores vertex normals in the rgb channels.  a is zero
@@ -423,18 +433,25 @@ int main()
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
             
+            //erosion and deposition
             ourComputeShader3_3.use();
             glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+            
+            //sediment transport
+
             
             ourComputeShader3_4.use();
             glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
             
 
+            //evaporation
+            
             ourComputeShader3_5.use();
             glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+            
 
             //Calculate normals of map shader -- change to not update every loop later on
             ourComputeShaderNormals.use();
@@ -790,4 +807,5 @@ glm::vec3 calcNormal(glm::vec3 a, glm::vec3 b, glm::vec3 c) {
     return normal;
 
 }
+
 

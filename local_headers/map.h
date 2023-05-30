@@ -138,7 +138,7 @@ public:
 					tv[2].z = (j * spacing);
 					//normal calculation
 					vector <glm::vec3> tn(3); //temp normals
-					tn[0] = glm::normalize(calcNormal(tv[0], tv[2], tv[1])); //these may be wrong winding order, unsure
+					tn[0] = glm::normalize(calcNormal(tv[0], tv[2], tv[1])); 
 					tn[1] = glm::normalize(calcNormal(tv[1], tv[0], tv[2]));
 					tn[2] = glm::normalize(calcNormal(tv[2], tv[1], tv[0]));
 					//texCoord calculation

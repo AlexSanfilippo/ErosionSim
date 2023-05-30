@@ -11,6 +11,7 @@
 //output to the image.  format must match here and in host program
 layout(rgba32f, binding = 0) uniform image2D imgOutput; //changing binding to change image: 0, 2, or 3
 layout(rgba32f, binding = 2) uniform image2D imgOutput2; //velocity
+layout(rgba32f, binding = 3) uniform image2D imgOutput3; //normals and slope
 
 
 
@@ -46,11 +47,22 @@ void main()
     //unsure what to set these to
     float K_c = 0.01f; //carrying constant     ?
     float K_s = 0.01f; //dissolving constant     ?
-    float K_d = 0.1f; //deposit constant    ?
+    float K_d = 10.1f; //deposit constant    ?
 
-    float a = max(0.1f,0.1f); //local tilt.  HOW TO FIND?!?
+
+    float tilt = imageLoad(imgOutput, texelCoord).a;
+    float a = max(0.01f,tilt); //local tilt. what to make minimum?
     //a is 0 on flat terrain
 
+
+    //velocity adjustment - not working yet, causes map to vanish
+    
+    if(v.x > -.25 && v.x < .25)
+    {
+        v.x = 0.0f;
+        v.y = 0.0f;
+    }
+    
 
     float C = K_c * sin(a) * sqrt(v.x * v.x + v.y * v.y); //way too big
     //C = 0.00001; //TP
@@ -62,7 +74,7 @@ void main()
     {
         if (C > s) //dissolve soil into water
         {
-            value.r = max(0.40f, rgba.r - K_s * (C - s)); // (11a)
+            value.r = max(0.10f, rgba.r - K_s * (C - s)); // (11a)
             s_1 = s + K_s * (C - s);     // (11b)
         }
         else //deposit soil - currently broken
@@ -70,7 +82,8 @@ void main()
             value.r = rgba.r + K_d * (s - C);  //(12a)  //either no update or causes map to rise/sink beyond view instantly
             s_1 = s - K_d * (s - C);   //(12b)
         }        
-    }
+    }    
+    
     
     value.b = s_1;
 

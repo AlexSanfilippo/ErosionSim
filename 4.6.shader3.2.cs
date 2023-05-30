@@ -56,7 +56,7 @@ void main()
     }
 
     //NO_SLIP BOUNDARY
-    /*
+    
     if (texelCoord.y >= size-1)
     {
         sumLRTB -= lrtb.b;
@@ -77,7 +77,7 @@ void main()
         sumLRTB -= lrtb.r;
         lrtb.r = 0.0f;
     }
-    */
+    
 
 
     float lX = 1.0f; 

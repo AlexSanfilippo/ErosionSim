@@ -26,7 +26,7 @@ void main()
 
     //value.x = rgba.x;
 
-    float dT = 0.0001f; //time step
+    float dT = 0.01f; //time step
 
 
     value = rgba;
