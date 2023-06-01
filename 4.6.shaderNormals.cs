@@ -45,7 +45,7 @@ float sum(vec2 v){
 
 void main()
 {
-    vec4 value = vec4(0.0, 0.0, 0.0, 1.0);
+    vec4 value = vec4(0.0, 0.0, 0.0, 0.0);
 
     //absolute texel coord (ie, not normalized)
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
@@ -206,7 +206,7 @@ void main()
 //vec2 texNormalMap(in vec2 uv)
 
     vec2 s = 1.0/vec2(128.f,128.f);
-    vec2 uv = vec2(float(texelCoord.x), float(texelCoord.y))/vec2(128.f,128.f);
+    vec2 uv = vec2(float(texelCoord.x), float(texelCoord.y))/vec2(129.f,129.f);
     
 
     //float p = texture(heightMap, uv).x;
@@ -237,10 +237,28 @@ void main()
     //norms = vec3(h1);
     
 
-    float slope = sqrt( pow(0.5f - normal.x, 2) +  pow(0.5f - normal.y, 2));
+    //ISSUE FOUND: TILT was using LAND+WATER height, needs to use LAND TILT
+    //float tilt =  sqrt( pow(0.5f - normal.x, 2) +  pow(0.5f - normal.y, 2)); //NOT QUITE working
 
-    //write normal to the texture
-    imageStore(imgOutput3, texelCoord, vec4(norms.x, norms.y, norms.z, slope));
+  
+    p = imageLoad(imgOutput0, ivec2(uv * vec2(128.f, 128.f))).r;  
+    h1 = imageLoad(imgOutput0, ivec2((uv + s * vec2(textureOffset, 0.0f)) * vec2(128.f, 128.f))).r;   
+    v1 = imageLoad(imgOutput0, ivec2((uv + s * vec2(0.0f, textureOffset)) * vec2(128.f, 128.f))).r;
+
+
+
+    vec2 normalLand = (p - vec2(h1, v1));
+    //normal = vec2(p - h1, p - v1);
+
+    //very important
+    normalLand *= normalStrength;
+    normalLand += 0.5f;
+
+    float tilt = sqrt(pow(0.5f - normalLand.x, 2) + pow(0.5f - normalLand.y, 2));
+
+
+    //write normal to the texture, plus the tilt in the fourth channel
+    imageStore(imgOutput3, texelCoord, vec4(norms.x, norms.y, norms.z, tilt));
 
     
 

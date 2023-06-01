@@ -36,27 +36,30 @@ layout(binding=3) uniform sampler2D texNormals;
 
 layout(binding=2) uniform sampler2D texVelocity; //velocity
 
+layout(binding=1) uniform sampler2D texFluxVel; //flux
+
 void main()
 {  
 
     //NEW - read normals from texture
     vec2 TexCoordsN = vec2(aTexCoord.y, aTexCoord.x);
     vec3 texNorm = texture(texNormals, TexCoordsN).rgb;
+    float trueTilt =  texture(texNormals, TexCoordsN).a;
     vec2 texV = texture(texVelocity, TexCoordsN).rg;
-
+    vec4 texFlux = texture(texFluxVel, TexCoordsN);
 
 
     //TEXTURE VERSION WORKING
     vec2 TexCoords = vec2(aTexCoord.y, aTexCoord.x);
     vec4 texCol = texture(tex, TexCoords).rgba;
-    gl_Position = projection * view * model * vec4(aPos.x, texCol.r + texCol.g, aPos.z, 1.0);
-    //gl_Position = projection * view * model * vec4(aPos.x, texCol.r, aPos.z, 1.0); //water height not displayed on mesh
+    //gl_Position = projection * view * model * vec4(aPos.x, texCol.r + texCol.g, aPos.z, 1.0);
+    gl_Position = projection * view * model * vec4(aPos.x, texCol.r, aPos.z, 1.0); //water height not displayed on mesh
     
 
     //TERRAIN COLOR DEFINTIONS
     vec3 flatColor = vec3(0.231, 0.812, 0.118); //grass
-    //vec3 vertColor = vec3(0.522f, 0.357f, 0.196f); //dirt or rock-brown version
-    vec3 vertColor = vec3(0.612, 0.541, 0.498); //grey version
+    vec3 vertColor = vec3(0.522f, 0.357f, 0.196f); //dirt or rock-brown version
+    //vec3 vertColor = vec3(0.612, 0.541, 0.498); //grey version
     
 
     
@@ -99,22 +102,58 @@ void main()
     //change 3 instances of texNorm/aNorm below to turn on/off normal vector texture's effect
     vec3 tempNormVal = texNorm; //texNorm
     //float slope = 1.0f - -1.f * tempNormVal.y;
-    float slope = sqrt( pow(0.5f - tempNormVal.x, 2) +  pow(0.5f - tempNormVal.y, 2));
+    //float slope = sqrt( pow(0.5f - tempNormVal.x, 2) +  pow(0.5f - tempNormVal.y, 2));
+    float slope = trueTilt;
+
     float grassBlendHeight = grassSlopeThreshold * (1.0f-grassBlendAmount);
     float grassWeight = 1.0f-clamp((slope-grassBlendHeight)/(grassSlopeThreshold-grassBlendHeight),0.0f, 1.0f);
     ourColor = 1.5f*flatColor*clamp((1.0f-1.0f*aPos.y),0.33,.8)*(0.5f+tempNormVal.x)* grassWeight + 1.5f*(clamp(0.25f+tempNormVal.x,.025f,0.99f)*(1.0f-grassWeight)*vertColor); //*tilt*2.25
     
+
+    
     //outer condition colors water blue
+    /*
     if(texCol.g > 0.0001){
         //ourColor = mix(ourColor, vec3(0.f, 0.2f, max(texCol.g,0.45)), 0.25+texCol.g);
         //ourColor = mix(0.6f*ourColor, vec3(0.f, 0.2f, 0.45), 0.25+texCol.g); //attempt at transparent water
         ourColor = mix(mix(ourColor, vec3(0.5f, 0.5f, 0.85), 0.0+texCol.g), vec3(0.f, 0.2f, 0.45), 0.75f + texCol.g); //simple depth color
     }
+    */
     
-    //visualizing water velocity
-    if(texV.x > -0.25f && texV.x < 0.25f && texV.y > -0.25f && texV.y < 0.25f){
-        ourColor = vec3(0.6, 0.0, 0.0);
-    }
+    
+    if(texCol.g > 0.0001f){
+        
+        ourColor = vec3(0.0f);
 
+
+        //visualizing water velocity
+        ourColor = vec3(0.0f ,0.0f, 0.9f); //default water color is blue
+        //velocity with great magnitude is colored red
+        float fast = 0.01f;
+        
+        
+        if(  (texV.x < -fast || texV.x > fast) || (texV.y < -fast || texV.y > fast) ){
+            float mag = sqrt(texV.x*texV.x + texV.y * texV.y);
+            ourColor += vec3(1.006*mag, 0.0, 0.0);
+        }
+        
+
+        //visualizing dissolved sediment
+        /*
+        if(texCol.b > 0.0f){
+            ourColor += vec3(0.0f, 6000.f*texCol.b, 0.0f );
+        }
+        */
+    }
+    
+    //color by tilt
+    
+    //ourColor = vec3(trueTilt, 0.0f, 0.0f);
+
+    //color by flux
+
+    //ourColor += vec3(texFlux.y); //not working
+    
+    
     
 }

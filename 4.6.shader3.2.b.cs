@@ -15,7 +15,7 @@ layout(rgba32f, binding = 2) uniform image2D imgOutput2; //velocity
 
 void main()
 {
-    vec4 value = vec4(0.0, 0.0, 0.0, 1.0);
+    vec4 value = vec4(0.0, 0.0, 0.0, 0.0);
 
     //absolute texel coord (ie, not normalized)
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
@@ -24,7 +24,7 @@ void main()
     vec4 lrtb = imageLoad(imgOutput1, texelCoord);
     vec4 v = imageLoad(imgOutput2, texelCoord); //velocity of water
 
-    float dT = 0.1f; //time step
+    float dT = 0.05f; //time step
     //UPDATE FLUX (eqn 2)
     float A = 1.0f; //cross-sectional area.
     float g = 9.81f; //acceleration from gravity (m/s^2)
@@ -75,11 +75,16 @@ void main()
     }
     */
     //eqn 7: update water height wrt water in/out flow dV
-    float d2 = rgba.g + dV / (lX * lY); //ISSUE dV == 0.0f
+    float d2 = rgba.g + dV / (lX * lY); 
     float d1 = rgba.g;
-    value.x = rgba.r;
+    //value.x = rgba.r;
     rgba.g = d2;
     rgba.a = d1;
+
+
+    //TP: Attempt to accumulate velocity
+    //v += dV / (lX * lY); //no change in behavoir
+
 
     imageStore(imgOutput0, texelCoord, rgba); //b,d,s
     imageStore(imgOutput1, texelCoord, lrtb); //flux

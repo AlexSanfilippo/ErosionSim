@@ -16,7 +16,7 @@ layout(rgba32f, binding = 0) uniform image2D imgOutput; //changing binding to ch
 
 void main()
 {
-    vec4 value = vec4(0.0, 0.0, 0.0, 1.0);
+    vec4 value = vec4(0.0, 0.0, 0.0, 0.0);
 
     //absolute texel coord (ie, not normalized)
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.yx);
@@ -26,7 +26,7 @@ void main()
 
     //value.x = rgba.x;
 
-    float dT = 0.01f; //time step
+    float dT = 0.02f; //time step
 
 
     value = rgba;

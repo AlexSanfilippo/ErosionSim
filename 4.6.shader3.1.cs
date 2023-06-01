@@ -27,7 +27,7 @@ float distance(vec2 v1, vec2 v2)
 
 void main()
 {
-    vec4 value = vec4(0.0, 0.0, 0.0, 1.0);
+    vec4 value = vec4(0.0, 0.0, 0.0, 0.0);
 
     //absolute texel coord (ie, not normalized)
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.yx);
@@ -38,21 +38,22 @@ void main()
 
 
     vec4 rgba = imageLoad(imgOutput, texelCoord); //works: load in the height map image
-  
-    value.x = rgba.x;
+    value = rgba;
+    //value.x = rgba.x;
 
-    float dT = 0.55f; //time step
+    float dT = 0.09f; //time step
 
     //RAIN 
-    //value.y = rgba.y + dT * 0.000001f * random(vec2(rgba.x*time, rgba.y*(time+1)));  //pseudo-random rain
+    value.y = rgba.y + dT * 0.00001f * random(vec2(rgba.x*time, rgba.y*(time+1)));  //pseudo-random rain
 
     //WATER SOURCE
-    //vec2 source = vec2((0.15f*sin(time) + 0.5), (0.15f*cos(time) + 0.5)); //pos of water source- norm coords in [0,1] FOR DEMO: 0.9, 0.9
-    vec2 source = vec2(0.9f, 0.9f);
-    float radius = 0.05f; //radius of water source, square map side length = 2.0f
+    float r = 0.25f;
+    //vec2 source = vec2((r*sin(time) + 0.5), (r*cos(time) + 0.5)); //pos of water source- norm coords in [0,1] FOR DEMO: 0.9, 0.9
+    vec2 source = vec2(0.5f, 0.9f);
+    float radius = 0.04f; //radius of water source, square map side length = 2.0f
     float strength = 0.1f; //how much water to add //very unsure how strong this is, probably want value < 1.0f
     float MAXWATER = 0.3f;
-    value.y = min(rgba.y + dT*strength * max(0.0f, radius - distance(source, normCoord)), MAXWATER);
+    //value.y = min(rgba.y + dT*strength * max(0.0f, radius - distance(source, normCoord)), MAXWATER);
 
     
   

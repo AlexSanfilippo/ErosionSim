@@ -16,7 +16,7 @@ layout(rgba32f, binding = 2) uniform image2D imgOutput2; //velocity
 
 void main()
 {
-    vec4 value = vec4(0.0, 0.0, 0.0, 1.0);
+    vec4 value = vec4(0.0, 0.0, 0.0, 0.0);
 
     //absolute texel coord (ie, not normalized)
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.yx);
@@ -31,7 +31,7 @@ void main()
 
     //value.x = rgba.x;
 
-    float dT = 0.1f; //time step
+    float dT = 0.000001f; //time step
 
 
     value = rgba;
@@ -41,8 +41,14 @@ void main()
     //of sediment they lost.  Thus, high v water erodes, but low b water experiences no change.  
     //I should try changing the texelCoord to be normCoord, then convert back, similar to how we did 
     //it in the normal calculation.  
-    value.b = imageLoad(imgOutput, ivec2(float(texelCoord.x) - v.x * dT, float(texelCoord.y) - v.y * dT)).b;
+    //value.b = imageLoad(imgOutput, ivec2(float(normCoord.x) - v.x * dT, float(normCoord.y) - v.y * dT)).b;
 
+    vec2 uv = vec2(float(texelCoord.x), float(texelCoord.y)) / vec2(128.f, 128.f);
+    
+    value.b = imageLoad(imgOutput, ivec2(vec2(uv.x - v.x * dT, uv.y - v.y * dT) * vec2(128.0f,128.0f) )).b;
+
+    //NEED TO ADD BOUNDARY CONDITIONS
+    
 
     //write to image, at this texelCoord, the 4f vector of color data
     imageStore(imgOutput, texelCoord, value);

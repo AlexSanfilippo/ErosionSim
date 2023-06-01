@@ -15,7 +15,7 @@ layout(rgba32f, binding = 2) uniform image2D imgOutput2; //velocity
 
 void main()
 {
-    vec4 value = vec4(0.0, 0.0, 0.0, 1.0);
+    vec4 value = vec4(0.0, 0.0, 0.0, 0.0);
 
     //absolute texel coord (ie, not normalized)
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
@@ -24,7 +24,7 @@ void main()
     vec4 lrtb = imageLoad(imgOutput1, texelCoord);
     vec4 v = imageLoad(imgOutput2, texelCoord); //velocity of water
 
-    float dT = 0.1f; //time step
+    float dT = 0.001f; //time step
     
 
     float lX = 1.0f;
@@ -33,7 +33,7 @@ void main()
 
     //eqn 8: update water flow through current cell
 
-    vec2 dW;
+    vec2 dW; //double checked: this is correct
     dW.x = (imageLoad(imgOutput1, ivec2(texelCoord.x - 1, texelCoord.y)).g - lrtb.r +
         lrtb.g - imageLoad(imgOutput1, ivec2(texelCoord.x + 1, texelCoord.y)).r) / 2.f;
     dW.y = (imageLoad(imgOutput1, ivec2(texelCoord.x, texelCoord.y - 1)).b - lrtb.a +
@@ -46,8 +46,8 @@ void main()
     v.y = dW.y / (d_bar * lX); //v
 
 
-    value.r = rgba.r;
-    value.g = rgba.g;
+    //value.r = rgba.r;
+    //value.g = rgba.g;
     
 
     //write to image, at this texelCoord, the 4f vector of color data

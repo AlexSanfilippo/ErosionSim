@@ -206,10 +206,10 @@ int main()
     unsigned int size = 128; //resolution, 
     unsigned int octaves = 5; //LOWEST = 1
     float smooth = 3.5; //higher -> bumpier.  closer to 0 -> flatter
-    int seed = 1245; //2000  //10366 //1998 for reddit demo (1999 is nice too) //12478 nice lake //1245 nice river
+    int seed = 1998; //2000  //10366 //1998 for reddit demo (1999 is nice too) //12478 nice lake //1245 nice river
     unsigned int frequency = 3; //cannot be under 2
     int numMapVertices = size * size * 6;
-    float scale = 10.25f; //stretch map out over XZ plane while perserving height
+    float scale = 5.25f; //stretch map out over XZ plane while perserving height
 
     bool getUserInput = false;
     if (getUserInput) {
@@ -264,12 +264,12 @@ int main()
             //justHeights[i*size + j] = 1.0f + sin(float(j)) * .1f; //result: flat map
             //justHeights[i * size + j] = map.getHeight(i, j, mapScale);  //not correct height values
             justHeights[i * size + j] = map.heights[i * size + j]; //normalized height values [0,1]
-            //justHeights[i * size + j*4 + 1] = 0.0f; //g
-            //justHeights[i * size + j*4 + 2] = 0.0f;  //b
-            //justHeights[i * size + j*4 + 3] = 0.0f;  //a
-            //j += 3;
-            //cout << "height = " << justHeights[i * size + j] << endl;
             
+
+            //bowl map
+            justHeights[i * size + j] = sqrt(pow(float(i) - float(size)/2.0f,2) + pow(float(j) - float(size) / 2.0f, 2))/128.f;//1.2f;// flap map tp
+            //flat map
+            //justHeights[i * size + j] = 1.0f;
             initVel[i * size + j] = 0.0f;
         }        
     }
@@ -389,7 +389,8 @@ int main()
         
         
         //the background color
-        glClearColor(0.2f, 0.3f, 0.5f, 1.0f); // old teal: 0.2f, 0.3f, 0.3f, 1.0f
+        //glClearColor(0.2f, 0.3f, 0.5f, 1.0f); // old teal: 0.2f, 0.3f, 0.3f, 1.0f
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
         //clear the color and depth buffer
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -428,25 +429,29 @@ int main()
             ourComputeShader3_2b.use();
             glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+            //calculate water velocity height map (t2) from flux height map (t1)
             ourComputeShader3_2c.use();
             glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-
+            
+            
             
             //erosion and deposition
+            
             ourComputeShader3_3.use();
             glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
             
-            //sediment transport
 
+            //sediment transport   -- disable until fix 3.3
             
             ourComputeShader3_4.use();
             glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
             
 
-            //evaporation
+            //evaporation     
             
             ourComputeShader3_5.use();
             glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
@@ -454,10 +459,11 @@ int main()
             
 
             //Calculate normals of map shader -- change to not update every loop later on
+            
             ourComputeShaderNormals.use();
             glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-        
+            
 
 
         

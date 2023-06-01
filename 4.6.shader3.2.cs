@@ -15,7 +15,7 @@ layout(rgba32f, binding = 1) uniform image2D imgOutput1; //flux (outflow)
 uniform float size;
 void main()
 {
-    vec4 value = vec4(0.0, 0.0, 0.0, 1.0);
+    vec4 value = vec4(0.0, 0.0, 0.0, 0.0);
 
     //absolute texel coord (ie, not normalized)
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
@@ -26,9 +26,9 @@ void main()
 
     float dT = 0.001f; //time step
     //UPDATE FLUX (eqn 2)
-    float A = 1.0f; //cross-sectional area.
+    float A = 10.0f; //cross-sectional area.
     float g = 9.81f; //acceleration from gravity (m/s^2)
-    float l = 1.0f; //length of virtual pipe
+    float l = 0.01f; //length of virtual pipe
     float sumLRTB = 0.f;
     for(int i = 0; i < 4; i++){
         vec4 rgba_1;
@@ -57,6 +57,7 @@ void main()
 
     //NO_SLIP BOUNDARY
     
+    
     if (texelCoord.y >= size-1)
     {
         sumLRTB -= lrtb.b;
@@ -78,18 +79,18 @@ void main()
         lrtb.r = 0.0f;
     }
     
-
+    
 
     float lX = 1.0f; 
     float lY = 1.0f; //distance between cells in X and Y directions --UNSURE OF VALUES
     //calculate and factor in scaling factor K
-    float K = min(1.f, (rgba.g *lX*lY)/ sumLRTB);
+    float K = min(1.0f, (rgba.g *lX*lY)/ sumLRTB);
     for(int i = 0; i < 4; i++)
     {
         lrtb[i] *= K;
     }
 
-  
+
     //3.2.2: water surface and velocity field update
     /*
     //eqn 6: change in velocity
@@ -116,8 +117,13 @@ void main()
     v.y = dW.y / d_bar * lX; //v
 
     */
+    value = rgba; //tp -causes a quarter of map not to update BUT deposition is happening
+    //value.a = rgba.a; //tp
     value.r = rgba.r;
     value.g = rgba.g;
+    
+
+
     //value.y = rgba.y; //blue, holds water
 
     //write to image, at this texelCoord, the 4f vector of color data

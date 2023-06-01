@@ -17,7 +17,7 @@ layout(rgba32f, binding = 3) uniform image2D imgOutput3; //normals and slope
 
 void main()
 {
-    vec4 value = vec4(0.0, 0.0, 0.0, 1.0);
+    vec4 value = vec4(0.0, 0.0, 0.0, 0.0);
 
     //absolute texel coord (ie, not normalized)
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.yx);
@@ -29,10 +29,11 @@ void main()
 
     vec4 rgba = imageLoad(imgOutput, texelCoord); //works: load in the height map image
     vec4 v = imageLoad(imgOutput2, texelCoord); //velocity of water
+    float tilt = imageLoad(imgOutput3, texelCoord).a; //tilt of land
 
     //value.x = rgba.x;
 
-    float dT = 0.001f; //time step
+    //float dT = 0.001f; //time step
 
 
 
@@ -45,45 +46,53 @@ void main()
 
 
     //unsure what to set these to
-    float K_c = 0.01f; //carrying constant     ?
+    float K_c = 0.005f; //carrying constant     ?
     float K_s = 0.01f; //dissolving constant     ?
-    float K_d = 10.1f; //deposit constant    ?
+    float K_d = 0.01f; //deposit constant    ?
 
 
-    float tilt = imageLoad(imgOutput, texelCoord).a;
-    float a = max(0.01f,tilt); //local tilt. what to make minimum?
+    //float tilt = imageLoad(imgOutput, texelCoord).a; WRONG TEXTURE
+    float a = max(0.0001f,tilt); //local tilt. what to make minimum?
     //a is 0 on flat terrain
 
 
-    //velocity adjustment - not working yet, causes map to vanish
+    //velocity adjustment - very slow water velocity set to zero to force deposition
     
-    if(v.x > -.25 && v.x < .25)
+    /*
+    if(v.x > -.5 && v.x < .5)
     {
         v.x = 0.0f;
         v.y = 0.0f;
     }
-    
+    */
 
-    float C = K_c * sin(a) * sqrt(v.x * v.x + v.y * v.y); //way too big
+    float C = K_c * sin(a) * sqrt(v.x * v.x + v.y * v.y); //
     //C = 0.00001; //TP
     float s = rgba.b;
     float s_1 = rgba.b;
 
     value = rgba;
-    if(value.g >= 0.00001f) //my addition, maybe not the best
+    if(value.g > 0.000001f) //my addition, maybe not the best
     {
         if (C > s) //dissolve soil into water
         {
-            value.r = max(0.10f, rgba.r - K_s * (C - s)); // (11a)
-            s_1 = s + K_s * (C - s);     // (11b)
-        }
+            //value.r = max(0.10f, rgba.r - K_s * (C - s)); // (11a)
+            value.r = rgba.r - K_s * (C - s);
+            s_1 = s + (K_s * (C - s));     // (11b)
+        }       
         else //deposit soil - currently broken
         {
             value.r = rgba.r + K_d * (s - C);  //(12a)  //either no update or causes map to rise/sink beyond view instantly
             s_1 = s - K_d * (s - C);   //(12b)
-        }        
-    }    
-    
+        }       
+    }
+    /*
+    else
+    {
+        value.r = rgba.r + K_d * (s*1000.f - 0.0f);  //(12a)  //either no update or causes map to rise/sink beyond view instantly
+        s_1 = 0.0f;   //(12b)
+    }
+    */
     
     value.b = s_1;
 
