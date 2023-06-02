@@ -238,7 +238,9 @@ void main()
     
 
     //ISSUE FOUND: TILT was using LAND+WATER height, needs to use LAND TILT
-    //float tilt =  sqrt( pow(0.5f - normal.x, 2) +  pow(0.5f - normal.y, 2)); //NOT QUITE working
+    //UPDATE: I think this was a mistake.  water that flows down hill into a pool should not continue with velocity
+    //as though going down hill.. should crash into water
+    float tilt =  sqrt( pow(0.5f - normal.x, 2) +  pow(0.5f - normal.y, 2)); //NOT QUITE working
 
   
     p = imageLoad(imgOutput0, ivec2(uv * vec2(128.f, 128.f))).r;  
@@ -254,7 +256,7 @@ void main()
     normalLand *= normalStrength;
     normalLand += 0.5f;
 
-    float tilt = sqrt(pow(0.5f - normalLand.x, 2) + pow(0.5f - normalLand.y, 2));
+    float tiltLand = sqrt(pow(0.5f - normalLand.x, 2) + pow(0.5f - normalLand.y, 2));
 
 
     //write normal to the texture, plus the tilt in the fourth channel

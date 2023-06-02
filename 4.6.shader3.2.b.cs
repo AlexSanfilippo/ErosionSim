@@ -24,11 +24,8 @@ void main()
     vec4 lrtb = imageLoad(imgOutput1, texelCoord);
     vec4 v = imageLoad(imgOutput2, texelCoord); //velocity of water
 
-    float dT = 0.05f; //time step
-    //UPDATE FLUX (eqn 2)
-    float A = 1.0f; //cross-sectional area.
-    float g = 9.81f; //acceleration from gravity (m/s^2)
-    float l = 1.0f; //length of virtual pipe
+    float dT = 0.01f; //time step
+    
     float sumLRTB = 0.f;
 
     float lX = 1.0f;
@@ -42,18 +39,9 @@ void main()
     }
 
     //3.2.2: water surface and velocity field update
-
-    //eqn 6: change in velocity
-    /*
-    float Rin = imageLoad(imgOutput1, ivec2(texelCoord.x - 1, texelCoord.y)).r;
-    float Tin = imageLoad(imgOutput1, ivec2(texelCoord.x, texelCoord.y - 1)).a;
-    float Lin = imageLoad(imgOutput1, ivec2(texelCoord.x + 1, texelCoord.y)).g;
-    float Bin = imageLoad(imgOutput1, ivec2(texelCoord.x, texelCoord.y + 1)).b;
-    */  
-    //rgba -> lrtb
     
-    float Rin = imageLoad(imgOutput1, ivec2(texelCoord.x - 1, texelCoord.y)).g;
-    
+    //Get F_in from neighboring cells
+    float Rin = imageLoad(imgOutput1, ivec2(texelCoord.x - 1, texelCoord.y)).g;    
     float Tin = imageLoad(imgOutput1, ivec2(texelCoord.x, texelCoord.y - 1)).b;
     float Lin = imageLoad(imgOutput1, ivec2(texelCoord.x + 1, texelCoord.y)).r;
     float Bin = imageLoad(imgOutput1, ivec2(texelCoord.x, texelCoord.y + 1)).a;
@@ -87,8 +75,8 @@ void main()
 
 
     imageStore(imgOutput0, texelCoord, rgba); //b,d,s
-    imageStore(imgOutput1, texelCoord, lrtb); //flux
-    imageStore(imgOutput2, texelCoord, v); //water velocity
+    //imageStore(imgOutput1, texelCoord, lrtb); //flux
+    //imageStore(imgOutput2, texelCoord, v); //water velocity
 }
 
 //eqn 8: update water flow through current cell

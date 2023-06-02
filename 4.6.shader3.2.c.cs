@@ -18,13 +18,13 @@ void main()
     vec4 value = vec4(0.0, 0.0, 0.0, 0.0);
 
     //absolute texel coord (ie, not normalized)
-    ivec2 texelCoord = ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
+    ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
 
     vec4 rgba = imageLoad(imgOutput0, texelCoord); //works: load in the height map image
     vec4 lrtb = imageLoad(imgOutput1, texelCoord);
     vec4 v = imageLoad(imgOutput2, texelCoord); //velocity of water
 
-    float dT = 0.001f; //time step
+    float dT = 0.01f; //time step
     
 
     float lX = 1.0f;
@@ -45,10 +45,14 @@ void main()
     v.x = dW.x / (d_bar * lY); //u
     v.y = dW.y / (d_bar * lX); //v
 
+    //tp-trying to fix sediment transport int 3.4
+    float speed = 2.0f;
+    //v.x = clamp(v.x, -speed, speed);
+    //v.y = clamp(v.y, -speed, speed);
 
     //value.r = rgba.r;
     //value.g = rgba.g;
-    
+
 
     //write to image, at this texelCoord, the 4f vector of color data
     //imageStore(imgOutput0, texelCoord, value); //b,d,s

@@ -24,11 +24,11 @@ void main()
     vec4 lrtb = imageLoad(imgOutput1, texelCoord);
     //vec4 v = imageLoad(imgOutput2, texelCoord); //velocity of water
 
-    float dT = 0.001f; //time step
+    float dT = 0.01f; //time step
     //UPDATE FLUX (eqn 2)
-    float A = 10.0f; //cross-sectional area.
+    float A = 0.001f; //cross-sectional area.
     float g = 9.81f; //acceleration from gravity (m/s^2)
-    float l = 0.01f; //length of virtual pipe
+    float l = 1.0f; //length of virtual pipe
     float sumLRTB = 0.f;
     for(int i = 0; i < 4; i++){
         vec4 rgba_1;
@@ -84,7 +84,8 @@ void main()
     float lX = 1.0f; 
     float lY = 1.0f; //distance between cells in X and Y directions --UNSURE OF VALUES
     //calculate and factor in scaling factor K
-    float K = min(1.0f, (rgba.g *lX*lY)/ sumLRTB);
+    float K = min(1.0f, (rgba.g *lX*lY)/ (sumLRTB) );
+
     for(int i = 0; i < 4; i++)
     {
         lrtb[i] *= K;
@@ -119,15 +120,15 @@ void main()
     */
     value = rgba; //tp -causes a quarter of map not to update BUT deposition is happening
     //value.a = rgba.a; //tp
-    value.r = rgba.r;
-    value.g = rgba.g;
+    //value.r = rgba.r;
+    //value.g = rgba.g;
     
 
 
     //value.y = rgba.y; //blue, holds water
 
     //write to image, at this texelCoord, the 4f vector of color data
-    imageStore(imgOutput0, texelCoord, value); //b,d,s
+    //imageStore(imgOutput0, texelCoord, value); //b,d,s
     imageStore(imgOutput1, texelCoord, lrtb); //flux
     //imageStore(imgOutput2, texelCoord, v); //water velocity
 }

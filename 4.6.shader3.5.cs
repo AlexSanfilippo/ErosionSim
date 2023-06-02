@@ -19,18 +19,18 @@ void main()
     vec4 value = vec4(0.0, 0.0, 0.0, 0.0);
 
     //absolute texel coord (ie, not normalized)
-    ivec2 texelCoord = ivec2(gl_GlobalInvocationID.yx);
+    ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
 
 
     vec4 rgba = imageLoad(imgOutput, texelCoord); //works: load in the height map image
 
     //value.x = rgba.x;
 
-    float dT = 0.02f; //time step
+    float dT = 0.01f; //time step
 
 
     value = rgba;
-    float K_e = 0.05f; //evap. constant
+    float K_e = 0.1f; //evap. constant
     value.g = value.g * (1 - K_e * dT);
 
     //write to image, at this texelCoord, the 4f vector of color data

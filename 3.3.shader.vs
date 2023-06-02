@@ -52,8 +52,8 @@ void main()
     //TEXTURE VERSION WORKING
     vec2 TexCoords = vec2(aTexCoord.y, aTexCoord.x);
     vec4 texCol = texture(tex, TexCoords).rgba;
-    //gl_Position = projection * view * model * vec4(aPos.x, texCol.r + texCol.g, aPos.z, 1.0);
-    gl_Position = projection * view * model * vec4(aPos.x, texCol.r, aPos.z, 1.0); //water height not displayed on mesh
+    gl_Position = projection * view * model * vec4(aPos.x, texCol.r + texCol.g, aPos.z, 1.0); //incl. water height on mesh
+    //gl_Position = projection * view * model * vec4(aPos.x, texCol.r, aPos.z, 1.0); //water height not displayed on mesh
     
 
     //TERRAIN COLOR DEFINTIONS
@@ -121,31 +121,35 @@ void main()
     */
     
     
-    if(texCol.g > 0.0001f){
+    if(texCol.g > 0.0000000001f){
         
         ourColor = vec3(0.0f);
 
 
         //visualizing water velocity
-        ourColor = vec3(0.0f ,0.0f, 0.9f); //default water color is blue
+        ourColor = vec3(0.0f ,0.0f, 0.4f); //default water color is blue
         //velocity with great magnitude is colored red
         float fast = 0.01f;
         
         
         if(  (texV.x < -fast || texV.x > fast) || (texV.y < -fast || texV.y > fast) ){
             float mag = sqrt(texV.x*texV.x + texV.y * texV.y);
-            ourColor += vec3(1.006*mag, 0.0, 0.0);
+            ourColor += vec3(clamp(1.0f*mag,0.0f, 0.65f), 0.0, -0.1);
         }
         
 
         //visualizing dissolved sediment
         /*
         if(texCol.b > 0.0f){
-            ourColor += vec3(0.0f, 6000.f*texCol.b, 0.0f );
+            //ourColor += vec3(0.0f, 6000000000.f*texCol.b, 0.0f );
+            ourColor += vec3(0.0f, clamp(texCol.b*100000.f, 0.0f, 1.0f), 0.0f );
         }
         */
+        //ourColor /= 3.0f;
     }
     
+
+
     //color by tilt
     
     //ourColor = vec3(trueTilt, 0.0f, 0.0f);

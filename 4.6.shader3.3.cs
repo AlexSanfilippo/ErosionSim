@@ -20,7 +20,7 @@ void main()
     vec4 value = vec4(0.0, 0.0, 0.0, 0.0);
 
     //absolute texel coord (ie, not normalized)
-    ivec2 texelCoord = ivec2(gl_GlobalInvocationID.yx);
+    ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
     //normCoord.x and .y store the [0,1] normalized coordinate of the pixel
     vec2 normCoord;
     normCoord.x = float(texelCoord.x) / (gl_NumWorkGroups.x);
@@ -45,14 +45,14 @@ void main()
     //3. the velocity vector "v", calculated in 3.3c, is incorrect
 
 
-    //unsure what to set these to
-    float K_c = 0.005f; //carrying constant     ?
-    float K_s = 0.01f; //dissolving constant     ?
-    float K_d = 0.01f; //deposit constant    ?
+    //unsure what to set these to - values from Lan Lao on YT
+    float K_c = 0.01f; //carrying constant     ?
+    float K_s = 0.0004f; //dissolving constant     ?
+    float K_d = 0.0008f; //deposit constant    ?
 
 
     //float tilt = imageLoad(imgOutput, texelCoord).a; WRONG TEXTURE
-    float a = max(0.0001f,tilt); //local tilt. what to make minimum?
+    float a = max(0.00f,tilt/1.f); //local tilt. what to make minimum?
     //a is 0 on flat terrain
 
 
@@ -66,35 +66,39 @@ void main()
     }
     */
 
-    float C = K_c * sin(a) * sqrt(v.x * v.x + v.y * v.y); //
+    float C = K_c * sin(a) * sqrt( (v.x * v.x) + (v.y * v.y) ); //
     //C = 0.00001; //TP
     float s = rgba.b;
-    float s_1 = rgba.b;
+
 
     value = rgba;
     if(value.g > 0.000001f) //my addition, maybe not the best
     {
         if (C > s) //dissolve soil into water
         {
-            //value.r = max(0.10f, rgba.r - K_s * (C - s)); // (11a)
-            value.r = rgba.r - K_s * (C - s);
-            s_1 = s + (K_s * (C - s));     // (11b)
+            //value.r = max(0.10f, rgba.r - K_s * (C - s)); // (11a), modified with min ground height
+            value.r = value.r - K_s * (C - s); //(11a)
+            s = s + (K_s * (C - s));     // (11b)
         }       
         else //deposit soil - currently broken
         {
-            value.r = rgba.r + K_d * (s - C);  //(12a)  //either no update or causes map to rise/sink beyond view instantly
-            s_1 = s - K_d * (s - C);   //(12b)
+            value.r = value.r + K_d * (s - C);  //(12a)  //either no update or causes map to rise/sink beyond view instantly
+            s = s - K_d * (s - C);   //(12b)
         }       
     }
+    
     /*
-    else
+    else //TP
     {
         value.r = rgba.r + K_d * (s*1000.f - 0.0f);  //(12a)  //either no update or causes map to rise/sink beyond view instantly
         s_1 = 0.0f;   //(12b)
     }
     */
     
-    value.b = s_1;
+    //old
+    //value.b = s;
+    //new
+    v.b = s;
 
     
 

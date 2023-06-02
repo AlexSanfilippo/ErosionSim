@@ -204,12 +204,12 @@ int main()
     
     /*Map Properties*/
     unsigned int size = 128; //resolution, 
-    unsigned int octaves = 5; //LOWEST = 1
+    unsigned int octaves = 7; //LOWEST = 1
     float smooth = 3.5; //higher -> bumpier.  closer to 0 -> flatter
-    int seed = 1998; //2000  //10366 //1998 for reddit demo (1999 is nice too) //12478 nice lake //1245 nice river
+    int seed = 1245; //2000  //10366 //1998 for reddit demo (1999 is nice too) //12478 nice lake //1245 nice river
     unsigned int frequency = 3; //cannot be under 2
     int numMapVertices = size * size * 6;
-    float scale = 5.25f; //stretch map out over XZ plane while perserving height
+    float scale = 10.25f; //stretch map out over XZ plane while perserving height
 
     bool getUserInput = false;
     if (getUserInput) {
@@ -261,15 +261,17 @@ int main()
     
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
-            //justHeights[i*size + j] = 1.0f + sin(float(j)) * .1f; //result: flat map
-            //justHeights[i * size + j] = map.getHeight(i, j, mapScale);  //not correct height values
-            justHeights[i * size + j] = map.heights[i * size + j]; //normalized height values [0,1]
             
-
+            //actual height map
+            justHeights[i * size + j] = map.heights[i * size + j]; //normalized height values [0,1]
             //bowl map
-            justHeights[i * size + j] = sqrt(pow(float(i) - float(size)/2.0f,2) + pow(float(j) - float(size) / 2.0f, 2))/128.f;//1.2f;// flap map tp
+            //justHeights[i * size + j] = sqrt(pow(float(i) - float(size)/2.0f,2) + pow(float(j) - float(size) / 2.0f, 2))/464.f;
+            //bowl map-more round
+            //justHeights[i * size + j] = -cos(sqrt(pow(float(i) - float(size) / 2.0f, 2) + pow(float(j) - float(size) / 2.0f, 2)) / 64.f);
             //flat map
             //justHeights[i * size + j] = 1.0f;
+
+
             initVel[i * size + j] = 0.0f;
         }        
     }
@@ -412,6 +414,10 @@ int main()
             float timeValue = glfwGetTime();           
             int TIME = glGetUniformLocation(ourComputeShader3_1.ID, "time");
             glUniform1f(TIME, timeValue);
+            //uniform for 
+            glm::vec2 rp = glm::vec2(rand() / float(RAND_MAX), rand() / float(RAND_MAX));
+            int rainPos = glGetUniformLocation(ourComputeShader3_1.ID, "rainPos");
+            glUniform2f(rainPos, rp.x, rp.y);
 
             glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
             //glDispatchCompute(32,1,1);
@@ -437,22 +443,19 @@ int main()
             
             
             
-            //erosion and deposition
-            
+            //erosion and deposition           
             ourComputeShader3_3.use();
             glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
             
 
-            //sediment transport   -- disable until fix 3.3
-            
+            //sediment transport   -- disable until fix 3.3           
             ourComputeShader3_4.use();
             glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
             
 
-            //evaporation     
-            
+            //evaporation                
             ourComputeShader3_5.use();
             glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
