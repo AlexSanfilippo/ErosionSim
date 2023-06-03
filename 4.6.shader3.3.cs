@@ -52,7 +52,7 @@ void main()
 
 
     //float tilt = imageLoad(imgOutput, texelCoord).a; WRONG TEXTURE
-    float a = max(0.00f,tilt/1.f); //local tilt. what to make minimum?
+    float a = max(0.9f,tilt/1.f); //local tilt. what to make minimum?
     //a is 0 on flat terrain
 
 

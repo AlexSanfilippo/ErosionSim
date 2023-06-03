@@ -31,7 +31,7 @@ void main()
 
     //value.x = rgba.x;
 
-    float dT = 0.01f; //time step
+    float dT = 0.004f; //time step
 
 
     value = rgba;
@@ -47,9 +47,9 @@ void main()
     vec2 uv = vec2(float(texelCoord.x), float(texelCoord.y)); //TPTP
 
 
-    //THIS DOES NOT WORK
-    //v /= 128.0f;
-    //value.b = imageLoad(imgOutput, ivec2(vec2(uv.x - (v.x) * dT, uv.y - (v.y) * dT))).b;
+    //EULER TIMESTEP BACKWARDS, as per paper
+    //v /= 128.0f; //lan lou //actually might be worse
+    ivec2 pos = ivec2(vec2(uv.x - (v.x) * dT, uv.y - (v.y) * dT));
 
     //---------try taking one cell-step back rather than scale by v, or set v tween 0 and 1
 
@@ -57,12 +57,22 @@ void main()
     //actually, appears to deposit in strange places (petals along cardinal XZ axes)  too, but also in bowl center  
     //using VS, sediment is NOT accumulating in areas of low vel, or moving out of areas of high vel
     //Thought: may need to "ping pong", ie, write NEW sediment values to a second texture, then swap textures
-    ivec2 pos = ivec2(texelCoord.x - sign(v.x), texelCoord.y - sign(v.y));
-    //ivec2 pos = ivec2(texelCoord.x - 1, texelCoord.y - 1);
-    //value.b = imageLoad(imgOutput, pos).b;
+    //ivec2 pos = ivec2(texelCoord.x - sign(v.x), texelCoord.y - sign(v.y)); //sediment moves but diagonal issue
+
+    //fixing diagonal issues: slow velocity should not move: no change
+    float mv = sqrt(v.x * v.x + v.y * v.y); //magnitude of velocity
+
+
     if(imageLoad(imgOutput,pos).g > 0.0f) //Do NOT push sediment onto land!
     {
-        value.b = imageLoad(imgOutput2, pos).b;
+        if(mv > 0.0f)
+        {
+            value.b = imageLoad(imgOutput2, pos).b;
+        }
+        else
+        {
+            value.b = imageLoad(imgOutput2, ivec2(texelCoord.x , texelCoord.y) ).b;
+        }
 
     }
      //new: load s_1 from texture2

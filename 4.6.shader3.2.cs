@@ -24,11 +24,11 @@ void main()
     vec4 lrtb = imageLoad(imgOutput1, texelCoord);
     //vec4 v = imageLoad(imgOutput2, texelCoord); //velocity of water
 
-    float dT = 0.01f; //time step
+    float dT = 0.004f; //time step
     //UPDATE FLUX (eqn 2)
-    float A = 0.001f; //cross-sectional area.
+    float A = 0.1f; //cross-sectional area.   //NB: decreasing A -> slower velocity  //default: 1.  but 0.1 for big moving waves
     float g = 9.81f; //acceleration from gravity (m/s^2)
-    float l = 1.0f; //length of virtual pipe
+    float l = 1.0f; //length of virtual pipe  //NB: does not effect velocity
     float sumLRTB = 0.f;
     for(int i = 0; i < 4; i++){
         vec4 rgba_1;
@@ -84,7 +84,7 @@ void main()
     float lX = 1.0f; 
     float lY = 1.0f; //distance between cells in X and Y directions --UNSURE OF VALUES
     //calculate and factor in scaling factor K
-    float K = min(1.0f, (rgba.g *lX*lY)/ (sumLRTB) );
+    float K = min(1.0f, (rgba.g *lX*lY)/ (sumLRTB)); //dT causing issues here
 
     for(int i = 0; i < 4; i++)
     {

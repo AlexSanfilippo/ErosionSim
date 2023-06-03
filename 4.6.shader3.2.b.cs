@@ -18,13 +18,13 @@ void main()
     vec4 value = vec4(0.0, 0.0, 0.0, 0.0);
 
     //absolute texel coord (ie, not normalized)
-    ivec2 texelCoord = ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
+    ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
 
     vec4 rgba = imageLoad(imgOutput0, texelCoord); //works: load in the height map image
     vec4 lrtb = imageLoad(imgOutput1, texelCoord);
     vec4 v = imageLoad(imgOutput2, texelCoord); //velocity of water
 
-    float dT = 0.01f; //time step
+    float dT = 0.07f; //time step //NB: affects the "update speed" over the water. ie, not velocity but "wave speed"
     
     float sumLRTB = 0.f;
 

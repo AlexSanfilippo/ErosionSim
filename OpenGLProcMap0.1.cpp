@@ -265,7 +265,7 @@ int main()
             //actual height map
             justHeights[i * size + j] = map.heights[i * size + j]; //normalized height values [0,1]
             //bowl map
-            //justHeights[i * size + j] = sqrt(pow(float(i) - float(size)/2.0f,2) + pow(float(j) - float(size) / 2.0f, 2))/464.f;
+            //justHeights[i * size + j] = sqrt(pow(float(i) - float(size)/2.0f,2) + pow(float(j) - float(size) / 2.0f, 2))/64.f;
             //bowl map-more round
             //justHeights[i * size + j] = -cos(sqrt(pow(float(i) - float(size) / 2.0f, 2) + pow(float(j) - float(size) / 2.0f, 2)) / 64.f);
             //flat map
@@ -449,6 +449,7 @@ int main()
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
             
 
+            
             //sediment transport   -- disable until fix 3.3           
             ourComputeShader3_4.use();
             glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);

@@ -24,7 +24,7 @@ void main()
     vec4 lrtb = imageLoad(imgOutput1, texelCoord);
     vec4 v = imageLoad(imgOutput2, texelCoord); //velocity of water
 
-    float dT = 0.01f; //time step
+    float dT = 0.004f; //time step
     
 
     float lX = 1.0f;
