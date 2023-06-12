@@ -50,19 +50,19 @@ void main()
     
 
     //WATER SOURCE
-    //float r = 0.25f;
-    //vec2 source = vec2((r*sin(time) + 0.5), (r*cos(time) + 0.5)); //pos of water source- norm coords in [0,1] FOR DEMO: 0.9, 0.9
-    vec2 source = vec2(0.9f, 0.5f);
+    float r = 0.125f;
+    //vec2 source = vec2((r*sin(time) + 0.5), (r*cos(time) + 0.5)); //moving source
+    vec2 source = vec2(0.5f, 0.9f); //static source
     float radius = 0.05f; //radius of water source, square map side length = 2.0f
-    float strength = 10.9f; //how much water to add //very unsure how strong this is, probably want value < 1.0f
-    float MAXWATER = 0.3f;
+    float strength = 2.9f; //how much water to add //very unsure how strong this is, probably want value < 1.0f
+    float MAXWATER =  0.3f;
     value.y = min(rgba.y + dT*strength * max(0.0f, radius - distance(source, normCoord)), MAXWATER);
 
 
     //RAIN 
     
-    radius = 0.02f;
-    strength = 10.9f;
+    radius = 0.09f;
+    strength = 1.9f;
     source = rainPos;
     //value.y = min(rgba.y + dT * strength * max(0.0f, radius - distance(source, normCoord)), MAXWATER);
     

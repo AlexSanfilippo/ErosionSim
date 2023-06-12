@@ -26,9 +26,9 @@ void main()
 
     float dT = 0.004f; //time step
     //UPDATE FLUX (eqn 2)
-    float A = 0.1f; //cross-sectional area.   //NB: decreasing A -> slower velocity  //default: 1.  but 0.1 for big moving waves
+    float A = 0.4f; //cross-sectional area.   //NB: decreasing A -> slower velocity  //default: 1.  but 0.1 for big moving waves
     float g = 9.81f; //acceleration from gravity (m/s^2)
-    float l = 1.0f; //length of virtual pipe  //NB: does not effect velocity
+    float l = 0.1f; //length of virtual pipe  //NB: does not effect velocity
     float sumLRTB = 0.f;
     for(int i = 0; i < 4; i++){
         vec4 rgba_1;
@@ -56,9 +56,10 @@ void main()
     }
 
     //NO_SLIP BOUNDARY
-    
-    
-    if (texelCoord.y >= size-1)
+
+    //size -= 10;
+    float sizeB = size; // - 10.f;
+    if (texelCoord.y >= sizeB-1)
     {
         sumLRTB -= lrtb.b;
         lrtb.b = 0.0f;
@@ -68,7 +69,7 @@ void main()
         sumLRTB -= lrtb.a;
         lrtb.a = 0.0f;
     }
-    if (texelCoord.x >= size - 1)
+    if (texelCoord.x >= sizeB - 1)
     {
         sumLRTB -= lrtb.g;
         lrtb.g = 0.0f;

@@ -16,105 +16,65 @@ layout(rgba32f, binding = 2) uniform image2D imgOutput2; //velocity
 
 void main()
 {
-    vec4 value = vec4(0.0, 0.0, 0.0, 0.0);
 
-    //absolute texel coord (ie, not normalized)
+    
+
+
+    //old borken version
+    /*
+    vec2 uv = vec2(float(texelCoord.x), float(texelCoord.y)); 
+    ivec2 pos = ivec2(vec2(uv.x - (v.x) * dT, uv.y - (v.y) * dT)); //
+    value.b = imageLoad(imgOutput2, pos).b;
+    */
+
+    //Version from Github
+    //-------------------
+    
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
-    //normCoord.x and .y store the [0,1] normalized coordinate of the pixel
-    vec2 normCoord;
-    normCoord.x = float(texelCoord.x) / (gl_NumWorkGroups.x);
-    normCoord.y = float(texelCoord.y) / (gl_NumWorkGroups.y);
-
-
     vec4 rgba = imageLoad(imgOutput, texelCoord); //works: load in the height map image
     vec4 v = imageLoad(imgOutput2, texelCoord); //velocity of water
+    vec4 value = vec4(0.0, 0.0, 0.0, 0.0);
 
-    //value.x = rgba.x;
-
-    float dT = 0.004f; //time step
-
+    
+    //use a uniform later on
+    vec2 textSize = vec2(128, 128); //size of the texture
 
     value = rgba;
 
-    //i think this is likely what is wrong with my deposition:  in this shader, the s value in Texture0 is set
-    //to 0.  and/or, no transport occurs, so on vertices with low velocity, they at most gain back the exact amount
-    //of sediment they lost.  Thus, high v water erodes, but low b water experiences no change.  
-    //I should try changing the texelCoord to be normCoord, then convert back, similar to how we did 
-    //it in the normal calculation.  
-    //value.b = imageLoad(imgOutput, ivec2(float(normCoord.x) - v.x * dT, float(normCoord.y) - v.y * dT)).b;
+    float dT = 1.0f; //not optimized.  small values produce no sediment.  around 10 seems sort of correct(?)
+    //vec4 self_bds = texture(T1_bds, UV);
+    //vec2 vel = texture(T3_v, UV).xy;
+    //scale up to xy coords so we can apply the vel*delta_t step
+    vec2 XY = texelCoord;// * textSize; 
+    float x_step = clamp(XY.x - v.x * dT, 0, textSize.x);
+    float y_step = clamp(XY.y - v.y * dT, 0, textSize.y);
 
-   
-    vec2 uv = vec2(float(texelCoord.x), float(texelCoord.y)); //TPTP
-
-
-    //EULER TIMESTEP BACKWARDS, as per paper
-    //v /= 128.0f; //lan lou //actually might be worse
-    ivec2 pos = ivec2(vec2(uv.x - (v.x) * dT, uv.y - (v.y) * dT));
-
-    //---------try taking one cell-step back rather than scale by v, or set v tween 0 and 1
-
-    //logically, should be minus the sign, but this seems to work?  I don't understand
-    //actually, appears to deposit in strange places (petals along cardinal XZ axes)  too, but also in bowl center  
-    //using VS, sediment is NOT accumulating in areas of low vel, or moving out of areas of high vel
-    //Thought: may need to "ping pong", ie, write NEW sediment values to a second texture, then swap textures
-    //ivec2 pos = ivec2(texelCoord.x - sign(v.x), texelCoord.y - sign(v.y)); //sediment moves but diagonal issue
-
-    //fixing diagonal issues: slow velocity should not move: no change
-    float mv = sqrt(v.x * v.x + v.y * v.y); //magnitude of velocity
-
-
-    if(imageLoad(imgOutput,pos).g > 0.0f) //Do NOT push sediment onto land!
-    {
-        if(mv > 0.0f)
-        {
-            value.b = imageLoad(imgOutput2, pos).b;
-        }
-        else
-        {
-            value.b = imageLoad(imgOutput2, ivec2(texelCoord.x , texelCoord.y) ).b;
-        }
-
-    }
-     //new: load s_1 from texture2
-    
+    //remember to divide back down to sample with UV coords
     /*
-    if (pos.x > 128 || pos.x < 0 || pos.y > 128 || pos.y < 0)
-    {
-        value.b = 0.0f;
-    }
+    float s_top_left = imageLoad(imgOutput2, ivec2(floor(x_step) / textSize.x, floor(y_step) / textSize.y)).z;
+    float s_top_right = imageLoad(imgOutput2, ivec2(ceil(x_step) / textSize.x, floor(y_step) / textSize.y)).z;
+    float s_bot_left = imageLoad(imgOutput2, ivec2(floor(x_step) / textSize.x, ceil(y_step) / textSize.y)).z;
+    float s_bot_right = imageLoad(imgOutput2, ivec2(ceil(x_step) / textSize.x, ceil(y_step) / textSize.y)).z;
     */
 
+    //imageLoad uses non-normalized pixel coords.  Thus we should NOT divide by textSize here or in XY step
+    float s_top_left = imageLoad(imgOutput2, ivec2(floor(x_step) , floor(y_step) )).z;
+    float s_top_right = imageLoad(imgOutput2, ivec2(ceil(x_step), floor(y_step) )).z;
+    float s_bot_left = imageLoad(imgOutput2, ivec2(floor(x_step) , ceil(y_step) )).z;
+    float s_bot_right = imageLoad(imgOutput2, ivec2(ceil(x_step) , ceil(y_step) )).z;
+    //first interp
+    float s_top = (x_step - floor(x_step)) * s_top_right + (ceil(x_step) - x_step) * s_top_left;
+    float s_bot = (x_step - floor(x_step)) * s_bot_right + (ceil(x_step) - x_step) * s_bot_left;
+
+    //second interp for final val
+    value.z = (y_step - floor(y_step)) * s_top + (ceil(y_step) - y_step) * s_bot;
+
+    //tp
+    //value.z = 0.01f;
+
+    imageStore(imgOutput, texelCoord, value);
 
 
 
-        /*
-        vec2 pos = vec2(uv.x - v.x * dT, uv.y - v.y * dT);// * vec2(128.0f, 128.0f);    
-        if (pos.x > 128 || pos.x < 0 || pos.y > 128 || pos.y < 0)
-        {
-            //TEMP
-            value.b = 0.05f;
-            //supposed to do: find value.b by using 4 nearest neighbors.. unsure what this means by "interpolation", average?
 
-
-            //this is definetly not the solution, but a stand-in
-            float R = imageLoad(imgOutput, ivec2(texelCoord.x+1, texelCoord.y)).b;
-            float L = imageLoad(imgOutput, ivec2(texelCoord.x - 1, texelCoord.y)).b;
-            float T = imageLoad(imgOutput, ivec2(texelCoord.x, texelCoord.y + 1)).b;
-            float B = imageLoad(imgOutput, ivec2(texelCoord.x, texelCoord.y - 1)).b;
-            value.b = (R+L+T+B) / 4.f;
-        }
-        */
-        /*
-        if(pos.x > 128  || pos.y > 128)
-        {
-            value.b = 0.5f;
-        }
-        */
-        //NEED TO ADD BOUNDARY CONDITIONS
-
-
-        //write to image, at this texelCoord, the 4f vector of color data
-        imageStore(imgOutput, texelCoord, value);
-        //imageStore(imgOutput, ivec2(64,64), value); //TP
-    //imageStore(imgOutput, texelCoord, v);
 }

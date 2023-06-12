@@ -105,6 +105,7 @@ bool freqDown = false;
 
 //SIM CONTROLS
 bool pauseSim = true;
+bool evaporate = false; //control whether shader 3.5 is called or not during main loop
 
 //
 struct mapStruct
@@ -204,8 +205,8 @@ int main()
     
     /*Map Properties*/
     unsigned int size = 128; //resolution, 
-    unsigned int octaves = 7; //LOWEST = 1
-    float smooth = 3.5; //higher -> bumpier.  closer to 0 -> flatter
+    unsigned int octaves = 3; //LOWEST = 1
+    float smooth = 13.5; //higher -> bumpier.  closer to 0 -> flatter
     int seed = 1245; //2000  //10366 //1998 for reddit demo (1999 is nice too) //12478 nice lake //1245 nice river
     unsigned int frequency = 3; //cannot be under 2
     int numMapVertices = size * size * 6;
@@ -263,13 +264,21 @@ int main()
         for (int j = 0; j < size; j++) {
             
             //actual height map
-            justHeights[i * size + j] = map.heights[i * size + j]; //normalized height values [0,1]
+            //justHeights[i * size + j] = map.heights[i * size + j]; //normalized height values [0,1]
             //bowl map
             //justHeights[i * size + j] = sqrt(pow(float(i) - float(size)/2.0f,2) + pow(float(j) - float(size) / 2.0f, 2))/64.f;
             //bowl map-more round
             //justHeights[i * size + j] = -cos(sqrt(pow(float(i) - float(size) / 2.0f, 2) + pow(float(j) - float(size) / 2.0f, 2)) / 64.f);
             //flat map
-            //justHeights[i * size + j] = 1.0f;
+            //justHeights[i * size + j] = 0.5f;
+            //cliff 
+            if (float(i) > 0.6f*float(size)) {
+                justHeights[i * size + j] = float(i) / float(size) + 0.5f;
+            }
+            else {
+                justHeights[i * size + j] = 0.5f; 
+            }
+            
 
 
             initVel[i * size + j] = 0.0f;
@@ -381,7 +390,8 @@ int main()
 
 
     
-    
+    int shCount = 0;
+    int shCountValue = 3; //set to 1 to run shader every frame
 
     // render loop
     // -----------
@@ -392,7 +402,7 @@ int main()
         
         //the background color
         //glClearColor(0.2f, 0.3f, 0.5f, 1.0f); // old teal: 0.2f, 0.3f, 0.3f, 1.0f
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f); //BLACK/grey
 
         //clear the color and depth buffer
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -406,24 +416,28 @@ int main()
         glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
         */
 
-        if (!pauseSim) {
-            /*COMPUTE SHADER*/ //need to change for SSBO
-            ourComputeShader3_1.use();
+        shCount += 1;
+        if (shCount == shCountValue) {
+            shCount = 0;
 
-            //time for random rain
-            float timeValue = glfwGetTime();           
-            int TIME = glGetUniformLocation(ourComputeShader3_1.ID, "time");
-            glUniform1f(TIME, timeValue);
-            //uniform for 
-            glm::vec2 rp = glm::vec2(rand() / float(RAND_MAX), rand() / float(RAND_MAX));
-            int rainPos = glGetUniformLocation(ourComputeShader3_1.ID, "rainPos");
-            glUniform2f(rainPos, rp.x, rp.y);
+            if (!pauseSim) {
+                /*COMPUTE SHADER*/ //need to change for SSBO
+                ourComputeShader3_1.use();
 
-            glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
-            //glDispatchCompute(32,1,1);
-            // make sure writing to image has finished before read
-            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-        }
+                //time for random rain
+                float timeValue = glfwGetTime();
+                int TIME = glGetUniformLocation(ourComputeShader3_1.ID, "time");
+                glUniform1f(TIME, timeValue);
+                //uniform for 
+                glm::vec2 rp = glm::vec2(rand() / float(RAND_MAX), rand() / float(RAND_MAX));
+                int rainPos = glGetUniformLocation(ourComputeShader3_1.ID, "rainPos");
+                glUniform2f(rainPos, rp.x, rp.y);
+
+                glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+                //glDispatchCompute(32,1,1);
+                // make sure writing to image has finished before read
+                glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+            }
             //second comp shader     (3.2 in 3 passes)   
             ourComputeShader3_2.use();
             //time for random rain
@@ -440,14 +454,14 @@ int main()
             ourComputeShader3_2c.use();
             glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-            
-            
-            
+
+
+
             //erosion and deposition           
             ourComputeShader3_3.use();
             glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-            
+
 
             
             //sediment transport   -- disable until fix 3.3           
@@ -456,17 +470,22 @@ int main()
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
             
 
-            //evaporation                
-            ourComputeShader3_5.use();
-            glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
-            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-            
+            //evaporation 
+            if (evaporate) {
+                ourComputeShader3_5.use();
+                glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+                glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+            }
+
+
 
             //Calculate normals of map shader -- change to not update every loop later on
-            
+
             ourComputeShaderNormals.use();
             glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        }
+        
             
 
 
@@ -676,7 +695,12 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 {
     if (key == GLFW_KEY_C && action == GLFW_PRESS)
     {
-        colorSetChange = 1;
+        if (evaporate == true) {
+            evaporate = false;
+        }
+        else {
+            evaporate = true;
+        }
     }
     if (key == GLFW_KEY_R && action == GLFW_PRESS)
     {
