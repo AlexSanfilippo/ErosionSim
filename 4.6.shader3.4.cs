@@ -41,13 +41,27 @@ void main()
 
     value = rgba;
 
-    float dT = 1.0f; //not optimized.  small values produce no sediment.  around 10 seems sort of correct(?)
+    float dT = 1.0f; //1.0f working best as of 16 june, 2023
     //vec4 self_bds = texture(T1_bds, UV);
     //vec2 vel = texture(T3_v, UV).xy;
     //scale up to xy coords so we can apply the vel*delta_t step
     vec2 XY = texelCoord;// * textSize; 
-    float x_step = clamp(XY.x - v.x * dT, 0, textSize.x);
-    float y_step = clamp(XY.y - v.y * dT, 0, textSize.y);
+
+
+
+    /*
+     //refernece
+    vec2 s = 1.0/vec2(128.f,128.f);
+    vec2 uv = vec2(float(texelCoord.x), float(texelCoord.y))/vec2(129.f,129.f);
+    
+
+    //float p = texture(heightMap, uv).x;
+    float p = sum(imageLoad(imgOutput0, ivec2(uv * vec2(128.f, 128.f))).rg);
+
+    //float h1 = texture(heightMap, uv + s * vec2(textureOffset,0)).x;
+    float h1 = sum(imageLoad(imgOutput0, ivec2( (uv + s * vec2(textureOffset, 0.0f)) * vec2(128.f, 128.f)  )).rg);
+     
+     */
 
     //remember to divide back down to sample with UV coords
     /*
@@ -57,6 +71,11 @@ void main()
     float s_bot_right = imageLoad(imgOutput2, ivec2(ceil(x_step) / textSize.x, ceil(y_step) / textSize.y)).z;
     */
 
+
+
+    
+    float x_step = clamp(XY.x - v.x * dT, 0, textSize.x);
+    float y_step = clamp(XY.y - v.y * dT, 0, textSize.y);
     //imageLoad uses non-normalized pixel coords.  Thus we should NOT divide by textSize here or in XY step
     float s_top_left = imageLoad(imgOutput2, ivec2(floor(x_step) , floor(y_step) )).z;
     float s_top_right = imageLoad(imgOutput2, ivec2(ceil(x_step), floor(y_step) )).z;
@@ -68,9 +87,12 @@ void main()
 
     //second interp for final val
     value.z = (y_step - floor(y_step)) * s_top + (ceil(y_step) - y_step) * s_bot;
-
-    //tp
+    //value.z = v.z;
+    //TPTTPTTP
     //value.z = 0.01f;
+
+    //NO TRANSPORT - does not work
+    //value.z = v.z;
 
     imageStore(imgOutput, texelCoord, value);
 

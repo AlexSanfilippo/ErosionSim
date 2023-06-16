@@ -45,14 +45,14 @@ void main()
     value = rgba;
     //value.x = rgba.x;
 
-    float dT = 0.01f; //time step
+    float dT = 0.004f; //time step
 
     
 
     //WATER SOURCE
     float r = 0.125f;
     //vec2 source = vec2((r*sin(time) + 0.5), (r*cos(time) + 0.5)); //moving source
-    vec2 source = vec2(0.5f, 0.9f); //static source
+    vec2 source = vec2(0.9f, 0.90f); //static source
     float radius = 0.05f; //radius of water source, square map side length = 2.0f
     float strength = 2.9f; //how much water to add //very unsure how strong this is, probably want value < 1.0f
     float MAXWATER =  0.3f;

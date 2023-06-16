@@ -11,7 +11,7 @@ uniform mat4 view;
 uniform mat4 projection;
 
 uniform float time;
-
+uniform int mode; //change display mode
 struct mapStruct
 {
 	vec3 pos;
@@ -58,8 +58,8 @@ void main()
 
     //TERRAIN COLOR DEFINTIONS
     vec3 flatColor = vec3(0.231, 0.812, 0.118); //grass
-    vec3 vertColor = vec3(0.522f, 0.357f, 0.196f); //dirt or rock-brown version
-    //vec3 vertColor = vec3(0.612, 0.541, 0.498); //grey version
+    //vec3 vertColor = vec3(0.522f, 0.357f, 0.196f); //dirt or rock-brown version
+    vec3 vertColor = vec3(0.612, 0.541, 0.498); //grey version
     
 
     
@@ -84,10 +84,16 @@ void main()
    
 
     //COLOR BY NORMAL
-    //ourColor = texNorm; 
+    //ourColor = texNorm;  //GPU normals 
     //ourColor = vec3(1.0, 0.0, 0.0);
-    //ourColor = 1.f*aNorm;  //looks super cool, but not what we want
+    //ourColor = 1.f*aNorm;  //CPU normals- not to be used anymore, code kept as refr.
     //ourColor = -1.f*vec3(0.0f, aNorm.g, 0.0f);
+
+
+    //COLOR BY TILT
+    //-------
+    //ourColor = vec3(trueTilt); //blacker is flatter
+
 
     //SabastionLague-like Version
     //-------------
@@ -107,42 +113,42 @@ void main()
 
     float grassBlendHeight = grassSlopeThreshold * (1.0f-grassBlendAmount);
     float grassWeight = 1.0f-clamp((slope-grassBlendHeight)/(grassSlopeThreshold-grassBlendHeight),0.0f, 1.0f);
-    ourColor = 1.5f*flatColor*clamp((1.0f-1.0f*aPos.y),0.33,.8)*(0.5f+tempNormVal.x*tempNormVal.y)* grassWeight + 1.5f*(clamp(0.25f+tempNormVal.x*(1.f+tempNormVal.y),.25f,0.99f)*(1.0f-grassWeight)*vertColor); //*tilt*2.25
+    ourColor = 1.25f*flatColor*clamp((1.0f-1.0f*aPos.y),0.33,.8)*(0.5f+tempNormVal.y)* grassWeight + 1.5f*(clamp(tempNormVal.y,.25f,0.99f)*(1.0f-grassWeight)*vertColor) - 0.25f*(clamp(tempNormVal.x,.25f,0.99f)*(1.0f-grassWeight)*vertColor); //*tilt*2.25
     
-
+    
     
     //outer condition colors water blue
-    /*
+    
     if(texCol.g > 0.0001){
         //ourColor = mix(ourColor, vec3(0.f, 0.2f, max(texCol.g,0.45)), 0.25+texCol.g);
         //ourColor = mix(0.6f*ourColor, vec3(0.f, 0.2f, 0.45), 0.25+texCol.g); //attempt at transparent water
-        ourColor = mix(mix(ourColor, vec3(0.5f, 0.5f, 0.85), 0.0+texCol.g), vec3(0.f, 0.2f, 0.45), 0.75f + texCol.g); //simple depth color
+        ourColor = mix(mix(ourColor, vec3(0.5f, 0.5f, 0.85)*texNorm, 0.0+texCol.g), vec3(0.f, 0.2f, 0.45), 0.75f + texCol.g); //simple depth color
     }
-    */
+    
     
     
     if(texCol.g > 0.0000001f){
         
-        ourColor = vec3(0.0f);
-
-
-        //visualizing water velocity
+        /*
         ourColor = vec3(0.0f ,0.0f, 0.4f); //default water color is blue
+        */
+
+        /*
 
         //velocity with great magnitude is colored red
         float fast = 0.0f;  //was 0.01f
         float mag = sqrt(texV.x*texV.x + texV.y * texV.y);
         
-        /*
+        
         if(  (texV.x < -fast || texV.x > fast) || (texV.y < -fast || texV.y > fast) ){
             
             ourColor += vec3(clamp(1.0f*mag,0.0f, 0.65f), 0.0, -0.1); //debugging
             //ourColor += vec3(clamp(1.0f*mag,0.0f, 0.65f) * (sin(time + 1.57f)/2.f + 2.0f), clamp(1.0f*mag,0.0f, 0.65f) * (sin(time)/2.f + 2.0f), 
             //clamp(1.0f*mag,0.0f, 0.65f) * (sin(time + 3.14f)/2.f + 2.0f));  //art
         }
-        */
+        
 
-        /*
+        
         //----Color Velocity by direction        
         if(texV.x < -fast){
             ourColor = vec3(1.0f, 0.0, 0.0);
@@ -162,14 +168,14 @@ void main()
         
         //visualizing dissolved sediment
         
-        
+        /*
         if(texCol.b > 0.0f){
             //ourColor += vec3(0.0f, 6000000000.f*texCol.b, 0.0f );
             ourColor += vec3(0.0f, clamp(texCol.b*100.f, 0.0f, 1.0f), 0.0f );
         }
+        */
         
-        
-        //ourColor /= 3.0f;
+        //ourColor /= 3.0f;  //tp
     }
     
 

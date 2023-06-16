@@ -149,14 +149,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="local_headers\map.h" />
-    <ClInclude Include="local_headers\primative.h" />
     <ClInclude Include="local_headers\shader_c.h" />
     <ClInclude Include="local_headers\shader_s.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="3.3.shader.fs" />
     <None Include="3.3.shader.vs" />
-    <None Include="4.6.shader.cs" />
     <None Include="4.6.shader3.1.cs" />
     <None Include="4.6.shader3.2.b.cs" />
     <None Include="4.6.shader3.2.c.cs" />
@@ -165,7 +163,6 @@
     <None Include="4.6.shader3.4.cs" />
     <None Include="4.6.shader3.5.cs" />
     <None Include="4.6.shaderNormals.cs" />
-    <None Include="4.6.shader_ssbo.cs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

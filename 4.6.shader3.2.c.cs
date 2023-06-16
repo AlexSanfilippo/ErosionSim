@@ -1,7 +1,7 @@
 #version 460 core
 
 /**
- This shader does step 3.2 (move water around) -- second pass, update water height d with flux f
+ This shader does step 3.2 (move water around) -- third pass, calculate velocity field UV using flux f
  */
 
  //input is one pixel of the image
@@ -45,17 +45,9 @@ void main()
     v.x = dW.x / (d_bar * lY); //u
     v.y = dW.y / (d_bar * lX); //v
 
-    //tp-trying to fix sediment transport int 3.4
-    float speed = 2.0f;
-    //v.x = clamp(v.x, -speed, speed);
-    //v.y = clamp(v.y, -speed, speed);
-
-    //value.r = rgba.r;
-    //value.g = rgba.g;
+    
 
 
-    //write to image, at this texelCoord, the 4f vector of color data
-    //imageStore(imgOutput0, texelCoord, value); //b,d,s
-    //imageStore(imgOutput1, texelCoord, lrtb); //flux
+    
     imageStore(imgOutput2, texelCoord, v); //water velocity
 } 

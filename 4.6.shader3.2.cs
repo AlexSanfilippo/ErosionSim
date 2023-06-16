@@ -1,7 +1,7 @@
 #version 460 core
 
-/**
- This shader does step 3.2 (move water around)
+/*
+ This shader does step 3.2: update the flux vector "f" and store in texture1
  */
 
  //input is one pixel of the image
@@ -47,8 +47,8 @@ void main()
             rgba_1 = imageLoad(imgOutput0, ivec2(texelCoord.x, texelCoord.y - 1));
         }
         float d_h = rgba.r + rgba.g - (rgba_1.r + rgba_1.g); //height difference
-        //tp
-        lrtb[i] = max(0.0f, lrtb[i] + dT * A * (g * d_h)/(l)); //
+        
+        lrtb[i] = max(0.0f, lrtb[i] + dT * A * (g * d_h)/(l)); 
 
         
 
@@ -58,13 +58,15 @@ void main()
     //NO_SLIP BOUNDARY
 
     //size -= 10;
-    float sizeB = size; // - 10.f;
+    float lowEnd = 0.0f;
+    float highEnd = 0.0f;
+    float sizeB = size - highEnd; // - 10.f;
     if (texelCoord.y >= sizeB-1)
     {
         sumLRTB -= lrtb.b;
         lrtb.b = 0.0f;
     }
-    if (texelCoord.y <= 0)
+    if (texelCoord.y <= lowEnd)
     {
         sumLRTB -= lrtb.a;
         lrtb.a = 0.0f;
@@ -74,7 +76,7 @@ void main()
         sumLRTB -= lrtb.g;
         lrtb.g = 0.0f;
     }
-    if (texelCoord.x <= 0)
+    if (texelCoord.x <= lowEnd)
     {
         sumLRTB -= lrtb.r;
         lrtb.r = 0.0f;
@@ -93,43 +95,13 @@ void main()
     }
 
 
-    //3.2.2: water surface and velocity field update
-    /*
-    //eqn 6: change in velocity
-    float Rin = imageLoad(imgOutput1, ivec2(texelCoord.x - 1, texelCoord.y)).r;
-    float Tin = imageLoad(imgOutput1, ivec2(texelCoord.x, texelCoord.y - 1)).a;
-    float Lin = imageLoad(imgOutput1, ivec2(texelCoord.x + 1, texelCoord.y)).g;
-    float Bin = imageLoad(imgOutput1, ivec2(texelCoord.x, texelCoord.y + 1)).b;
-    float dV = dT*((Rin + Tin + Lin + Bin) - sumLRTB);
-
-    //eqn 7: update water height
-    float d2 = rgba.g + dV / (lX * lY); //going below zero here, not good
-    float d1 = rgba.g;
-
-    //eqn 8: update water flow through current cell
-    vec2 dW;
-    dW.x = (imageLoad(imgOutput1, ivec2(texelCoord.x - 1, texelCoord.y)).g - lrtb.r +  
-        lrtb.g - imageLoad(imgOutput1, ivec2(texelCoord.x + 1, texelCoord.y)).r) / 2.f;
-    dW.y = (imageLoad(imgOutput1, ivec2(texelCoord.x, texelCoord.y - 1)).b - lrtb.a +  
-        lrtb.b - imageLoad(imgOutput1, ivec2(texelCoord.x, texelCoord.y + 1)).a) / 2.f;
-
-    float d_bar = (d1 + d2) / 2.f;
-
-    v.x = dW.x / d_bar * lY; //u
-    v.y = dW.y / d_bar * lX; //v
-
-    */
-    value = rgba; //tp -causes a quarter of map not to update BUT deposition is happening
-    //value.a = rgba.a; //tp
-    //value.r = rgba.r;
-    //value.g = rgba.g;
+    
+    value = rgba; 
+    
     
 
 
-    //value.y = rgba.y; //blue, holds water
-
-    //write to image, at this texelCoord, the 4f vector of color data
-    //imageStore(imgOutput0, texelCoord, value); //b,d,s
+   
     imageStore(imgOutput1, texelCoord, lrtb); //flux
-    //imageStore(imgOutput2, texelCoord, v); //water velocity
+    
 }

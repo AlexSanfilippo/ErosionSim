@@ -1,6 +1,6 @@
 #version 460 core
 
-/**
+/*
  This shader handles step 3.3: deposition and erosion
  */
 
@@ -13,10 +13,15 @@ layout(rgba32f, binding = 0) uniform image2D imgOutput; //changing binding to ch
 layout(rgba32f, binding = 2) uniform image2D imgOutput2; //velocity
 layout(rgba32f, binding = 3) uniform image2D imgOutput3; //normals and slope
 
+ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
+
 vec2 texture_size = vec2(128.f, 128.f);
 vec2 UV = vec2(gl_GlobalInvocationID.xy);
+vec2 uv = vec2(float(texelCoord.x), float(texelCoord.y)) / vec2(129.f, 129.f);
 vec2 l_xy = vec2(1.0f, 1.0f);
+vec2 s = 1.0 / texture_size;
 //alternative tilt factor "alpha" method found online
+/*
 float find_sin_alpha()
 {
     float self_b = imageLoad(imgOutput, ivec2(UV)).x;
@@ -30,14 +35,49 @@ float find_sin_alpha()
 
     return sqrt(dbdx * dbdx + dbdy * dbdy) / sqrt(1 + dbdx * dbdx + dbdy * dbdy);
 }
+*/
+//new version that uses indexing method from normal shader
+//seems to be working, but issue around edges
+float find_sin_alpha()
+{
+  
 
+    //land height values of 4 cardinal neighbors
+    // looks different, but not better neccessarily
+    /*
+    float r_b = imageLoad(imgOutput, ivec2((uv + s * vec2(1.0f, 0.0f)) * vec2(128.f, 128.f))).x;
+    float l_b = imageLoad(imgOutput, ivec2((uv - s * vec2(1.0f, 0.0f)) * vec2(128.f, 128.f))).x;
+    float d_b = imageLoad(imgOutput, ivec2((uv + s * vec2(0.0f, 1.0f)) * vec2(128.f, 128.f))).x;
+    float u_b = imageLoad(imgOutput, ivec2((uv - s * vec2(0.0f, 1.0f)) * vec2(128.f, 128.f))).x;
+    */
+    
+    float r_b = imageLoad(imgOutput, ivec2(UV + vec2(1.0, 0))).x;
+    float l_b = imageLoad(imgOutput, ivec2(UV - vec2(1.0, 0))).x;
+    float d_b = imageLoad(imgOutput, ivec2(UV + vec2(0, 1.0))).x;
+    float u_b = imageLoad(imgOutput, ivec2(UV - vec2(0, 1.0))).x;
+
+    //boundary detection  WORKS
+    if(r_b == 0 || l_b == 0 || d_b == 0 || u_b == 0)
+    {
+        return 0.0f;
+    }
+    
+
+    
+
+    
+    float dbdx = (r_b - l_b) / (2.0 * l_xy.x / texture_size.x);
+    float dbdy = (d_b - u_b) / (2.0 * l_xy.y / texture_size.y);
+
+    return sqrt(dbdx * dbdx + dbdy * dbdy) / sqrt(1 + dbdx * dbdx + dbdy * dbdy);
+}
 
 void main()
 {
     vec4 value = vec4(0.0, 0.0, 0.0, 0.0);
 
     //absolute texel coord (ie, not normalized)
-    ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
+    
     //normCoord.x and .y store the [0,1] normalized coordinate of the pixel
     vec2 normCoord;
     normCoord.x = float(texelCoord.x) / (gl_NumWorkGroups.x);
@@ -64,33 +104,38 @@ void main()
 
     //unsure what to set these to - values from Lan Lao on YT
     float K_c = 0.01f; //carrying constant     ?
-    float K_s = 0.004f; //dissolving constant     ?
-    float K_d = 0.008f; //deposit constant    ?
+    float K_s = 0.002f; //dissolving constant     ?
+    float K_d = 0.002f; //deposit constant    ?
 
 
     //float tilt = imageLoad(imgOutput, texelCoord).a; WRONG TEXTURE
-    float a = max(0.01f,tilt*1.f); //local tilt. what to make minimum? //some deposition with 0.9f min)
-                                   //a is 0 on flat terrain
-    a = max(0.01f, find_sin_alpha()); //TP, from github implementation.  Different results then "our" tilt, but still wrong
+    //float a = max(0.0f,tilt*1.f); //local tilt. what to make minimum? //some deposition with 0.9f min)
+    //a is 0 on flat terrain
+    //float a = find_sin_alpha(); //TP, from github implementation.  sort of works
+    float a = max(find_sin_alpha(), 0.01); //0.25 ok results //.01 ok too, maybe better
+    //
+    //float a = tilt;
 
-    //tp: velocity adjustment - very slow water velocity set to zero to force deposition
+    //CONCLUSION: our tilt value "a" is wrong, both for our version and the github-found version
 
-    /*
-    if( (v.x > -.1 && v.x < .1) && (v.y > -.1 && v.y < .1) )
-    {
-        v.x = 0.0f;
-        v.y = 0.0f;
-    }
-    */
+
+    //unsure if this is better or worse
+    //float a = 1.0f - clamp(find_sin_alpha(), 0.0f, 1.0f); //attempt at inversion
+
+
     value = rgba;
 
     float vMagn = sqrt((v.x * v.x) + (v.y * v.y));
-    float C = K_c * sin(a) * vMagn; //as per paper
+    //float C = K_c * sin(a) * vMagn; //as per paper (failing to deposit and erode correctly)
+
+    //float C = K_c * a * vMagn; //changed sin(a) -> a.  much smoother erosion on cliffs, but direction biased erosion too.
+    float C = K_c * a * vMagn;//* vMagn ; 
+    //float C = K_c * a * vMagn; //modified
     //float C = K_c * (sin(a)/2.f + 0.5f) * vMagn ; // modified by me
 
-    //float C = K_c * (sin(a) + 0.15) * max(0.15, vMagn) * clamp(value.y, 0.0f, 1.0f); //github -- if min 0, no erosion
+    //float C = K_c * (a + 0.15) * max(0.15, vMagn) * clamp(value.y, 0.0f, 1.0f); //github -- if min 0, no erosion
 
-    //C = 0.00001; //TP
+
     float s = rgba.b;
 
 
@@ -101,7 +146,7 @@ void main()
         {
             //value.r = max(0.10f, rgba.r - K_s * (C - s)); // (11a), modified with min ground height
             value.r = value.r - K_s * (C - s); //(11a)
-            s = s + (K_s * (C - s))*2.0f;     // (11b)
+            s = s + (K_s * (C - s));     // (11b)
         }       
         else //deposit soil
         {
@@ -110,19 +155,12 @@ void main()
         }       
     }
     
-    /*
-    else //TP
-    {
-        value.r = rgba.r + K_d * (s*1000.f - 0.0f);  //(12a)  //either no update or causes map to rise/sink beyond view instantly
-        s_1 = 0.0f;   //(12b)
-    }
-    */
+   
     
-    //old
-    //value.b = s;
-    //new
-    v.b = s;
-    //value.b = 0.0f;
+    
+    //update sediment in texture 2, not texture 0.  sediment written to texture 0 in shader 3.4
+    v.z = s;
+    
 
     
 

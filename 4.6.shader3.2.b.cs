@@ -70,6 +70,13 @@ void main()
     rgba.a = d1;
 
 
+    //EXPERIMENTAL: Move sediment using flux velocity 
+    //float s2 = rgba.z + dV / (lX * lY);
+    //float s1 = rgba.z;
+    //rgba.z = (s2 + s1) / 2.0f;
+
+
+
     //TP: Attempt to accumulate velocity
     //v += dV / (lX * lY); //no change in behavoir
 
