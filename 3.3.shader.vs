@@ -113,7 +113,7 @@ void main()
 
     float grassBlendHeight = grassSlopeThreshold * (1.0f-grassBlendAmount);
     float grassWeight = 1.0f-clamp((slope-grassBlendHeight)/(grassSlopeThreshold-grassBlendHeight),0.0f, 1.0f);
-    ourColor = 1.25f*flatColor*clamp((1.0f-1.0f*aPos.y),0.33,.8)*(0.5f+tempNormVal.y)* grassWeight + 1.5f*(clamp(tempNormVal.y,.25f,0.99f)*(1.0f-grassWeight)*vertColor) - 0.25f*(clamp(tempNormVal.x,.25f,0.99f)*(1.0f-grassWeight)*vertColor); //*tilt*2.25
+    ourColor = 1.25f*flatColor*clamp((1.0f-1.0f*aPos.y),0.33,.8)*(0.5f+tempNormVal.y)* grassWeight + 2.5f*(clamp(tempNormVal.y,.25f,0.99f)*(1.0f-grassWeight)*vertColor) - 0.25f*(clamp(tempNormVal.x,.25f,0.99f)*(1.0f-grassWeight)*vertColor); //*tilt*2.25
     
     
     
@@ -133,22 +133,22 @@ void main()
         ourColor = vec3(0.0f ,0.0f, 0.4f); //default water color is blue
         */
 
-        /*
+        
 
         //velocity with great magnitude is colored red
         float fast = 0.0f;  //was 0.01f
         float mag = sqrt(texV.x*texV.x + texV.y * texV.y);
         
-        
+        /*
         if(  (texV.x < -fast || texV.x > fast) || (texV.y < -fast || texV.y > fast) ){
             
             ourColor += vec3(clamp(1.0f*mag,0.0f, 0.65f), 0.0, -0.1); //debugging
             //ourColor += vec3(clamp(1.0f*mag,0.0f, 0.65f) * (sin(time + 1.57f)/2.f + 2.0f), clamp(1.0f*mag,0.0f, 0.65f) * (sin(time)/2.f + 2.0f), 
             //clamp(1.0f*mag,0.0f, 0.65f) * (sin(time + 3.14f)/2.f + 2.0f));  //art
         }
-        
+        */
 
-        
+        /*
         //----Color Velocity by direction        
         if(texV.x < -fast){
             ourColor = vec3(1.0f, 0.0, 0.0);
@@ -186,7 +186,7 @@ void main()
 
     //color by flux
 
-    //ourColor += vec3(texFlux.y); //not working
+    //ourColor += vec3(texFlux.x, texFlux.y, texFlux.z); //values generally too small to see
     
     
     

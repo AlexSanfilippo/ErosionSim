@@ -157,6 +157,7 @@ int main()
     ComputeShader ourComputeShader3_4("4.6.shader3.4.cs");
     ComputeShader ourComputeShader3_5("4.6.shader3.5.cs");
     ComputeShader ourComputeShaderNormals("4.6.shaderNormals.cs");
+    ComputeShader avgTilt("4.6.shader.AvgTilt.cs");
     
 
 
@@ -167,9 +168,9 @@ int main()
     
     /*Map Properties*/
     unsigned int size = 128; //resolution, 
-    unsigned int octaves = 2; //LOWEST = 1
+    unsigned int octaves = 6; //LOWEST = 1
     float smooth = 3.5; //higher -> bumpier.  closer to 0 -> flatter
-    int seed = 1245; //2000  //10366 //1998 for reddit demo (1999 is nice too) //12478 nice lake //1245 nice river
+    int seed = 12478; //2000  //10366 //1998 for reddit demo (1999 is nice too) //12478 nice lake //1245 nice river
     unsigned int frequency = 3; //cannot be under 2
     int numMapVertices = size * size * 6;
     float scale = 5.25f; //stretch map out over XZ plane while perserving height
@@ -226,7 +227,7 @@ int main()
         for (int j = 0; j < size; j++) {
             
             //actual height map
-            justHeights[i * size + j] = map.heights[i * size + j]; //normalized height values [0,1]
+            //justHeights[i * size + j] = map.heights[i * size + j]; //normalized height values [0,1]
             //bowl map
             //justHeights[i * size + j] = sqrt(pow(float(i) - float(size)/2.0f,2) + pow(float(j) - float(size) / 2.0f, 2))/64.f;
             //bowl map-more round
@@ -243,7 +244,7 @@ int main()
             }
             */
             //cliff double    
-            /*
+            
             if (float(i) > 0.6f*float(size)) {
                 justHeights[i * size + j] = float(i) / float(size) + 0.5f;
             }
@@ -253,7 +254,7 @@ int main()
             else {
                 justHeights[i * size + j] = 0.5f; 
             }
-            */
+            
 
 
             initVel[i * size + j] = 0.0f;
@@ -356,7 +357,8 @@ int main()
         
         //the background color
         //glClearColor(0.2f, 0.3f, 0.5f, 1.0f); // old teal: 0.2f, 0.3f, 0.3f, 1.0f
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f); //BLACK/grey
+        //glClearColor(0.0f, 0.0f, 0.0f, 1.0f); //BLACK/grey
+        glClearColor(0.8f, 0.8f, 0.8f, 1.0f); //lt grey
 
         //clear the color and depth buffer
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -404,6 +406,10 @@ int main()
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 
+            //average tilt "a"           
+            avgTilt.use();
+            glDispatchCompute((unsigned int)TEXTURE_WIDTH, (unsigned int)TEXTURE_HEIGHT, 1);
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
             //erosion and deposition           
             ourComputeShader3_3.use();

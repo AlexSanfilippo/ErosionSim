@@ -31,7 +31,7 @@ void main()
 
     value = rgba;
     float K_e = 0.5f; //evap. constant //was 0.1
-    value.g = value.g * (1 - K_e * dT);
+    value.g = max(0.0f, value.g * (1 - K_e * dT));
 
     //write to image, at this texelCoord, the 4f vector of color data
     imageStore(imgOutput, texelCoord, value);

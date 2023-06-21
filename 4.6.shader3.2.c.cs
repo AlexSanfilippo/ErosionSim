@@ -42,8 +42,8 @@ void main()
     
     float d_bar = (rgba.g + imageLoad(imgOutput0, ivec2(texelCoord.x, texelCoord.y)).a) / 2.f; //(d1 + d2) / 2.f;
 
-    v.x = dW.x / (d_bar * lY); //u
-    v.y = dW.y / (d_bar * lX); //v
+    v.x = dW.x / (d_bar / lY); //u
+    v.y = dW.y / (d_bar / lX); //v
 
     
 

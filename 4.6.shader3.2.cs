@@ -87,7 +87,7 @@ void main()
     float lX = 1.0f; 
     float lY = 1.0f; //distance between cells in X and Y directions --UNSURE OF VALUES
     //calculate and factor in scaling factor K
-    float K = min(1.0f, (rgba.g *lX*lY)/ (sumLRTB)); //dT causing issues here
+    float K = min(1.0f, (rgba.g *lX*lY)/ (sumLRTB) ); //dT causing issues here, removed
 
     for(int i = 0; i < 4; i++)
     {

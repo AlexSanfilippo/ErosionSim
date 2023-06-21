@@ -56,20 +56,40 @@ float find_sin_alpha()
     float d_b = imageLoad(imgOutput, ivec2(UV + vec2(0, 1.0))).x;
     float u_b = imageLoad(imgOutput, ivec2(UV - vec2(0, 1.0))).x;
 
+    float b = imageLoad(imgOutput, ivec2(UV + vec2(0.0, 0))).x;
+
     //boundary detection  WORKS
-    if(r_b == 0 || l_b == 0 || d_b == 0 || u_b == 0)
+    if (r_b == 0 || l_b == 0 || d_b == 0 || u_b == 0)
     {
         return 0.0f;
     }
-    
 
-    
 
-    
-    float dbdx = (r_b - l_b) / (2.0 * l_xy.x / texture_size.x);
-    float dbdy = (d_b - u_b) / (2.0 * l_xy.y / texture_size.y);
+
+
+
+    //float dbdx = (r_b - l_b) / (2.0 * l_xy.x / texture_size.x);
+    //float dbdy = (d_b - u_b) / (2.0 * l_xy.y / texture_size.y);
+
+    //not any better,but different erosion pattern
+    float dbdx = ( (r_b - l_b) + ((b-r_b) + (b-l_b) )/2.f ) / (2.0 * l_xy.x / texture_size.x);
+    float dbdy = ( (d_b - u_b) + ((b - d_b) + (b - u_b))/2.f )/ (2.0 * l_xy.y / texture_size.y);
 
     return sqrt(dbdx * dbdx + dbdy * dbdy) / sqrt(1 + dbdx * dbdx + dbdy * dbdy);
+}
+
+float getSmoothAlpha()
+{
+
+    float r_a = imageLoad(imgOutput2, ivec2(UV + vec2(1.0, 0))).w;
+    float l_a = imageLoad(imgOutput2, ivec2(UV - vec2(1.0, 0))).w;
+    float d_a = imageLoad(imgOutput2, ivec2(UV + vec2(0, 1.0))).w;
+    float u_a = imageLoad(imgOutput2, ivec2(UV - vec2(0, 1.0))).w;
+
+    float a = imageLoad(imgOutput2, ivec2(UV + vec2(0.0, 0))).w;
+
+
+    return (r_a + l_a + d_a + u_a + a )/ 5.0f; ;
 }
 
 void main()
@@ -103,7 +123,7 @@ void main()
 
 
     //unsure what to set these to - values from Lan Lao on YT
-    float K_c = 0.01f; //carrying constant     ?
+    float K_c = 0.001f; //carrying constant     ?
     float K_s = 0.002f; //dissolving constant     ?
     float K_d = 0.002f; //deposit constant    ?
 
@@ -112,9 +132,13 @@ void main()
     //float a = max(0.0f,tilt*1.f); //local tilt. what to make minimum? //some deposition with 0.9f min)
     //a is 0 on flat terrain
     //float a = find_sin_alpha(); //TP, from github implementation.  sort of works
-    float a = max(find_sin_alpha(), 0.01); //0.25 ok results //.01 ok too, maybe better
-    //
-    //float a = tilt;
+
+
+    //float a = max(find_sin_alpha(), 0.01); //0.25 ok results //.01 ok too, maybe better
+
+    float a = max(getSmoothAlpha(), 0.0f);
+    
+
 
     //CONCLUSION: our tilt value "a" is wrong, both for our version and the github-found version
 
@@ -129,7 +153,7 @@ void main()
     //float C = K_c * sin(a) * vMagn; //as per paper (failing to deposit and erode correctly)
 
     //float C = K_c * a * vMagn; //changed sin(a) -> a.  much smoother erosion on cliffs, but direction biased erosion too.
-    float C = K_c * a * vMagn;//* vMagn ; 
+    float C = K_c * vMagn;// * (1.0f + value.y);// * (1.0f - clamp(value.y, 0.0f, 1.0f));//* vMagn ; 
     //float C = K_c * a * vMagn; //modified
     //float C = K_c * (sin(a)/2.f + 0.5f) * vMagn ; // modified by me
 
@@ -139,8 +163,8 @@ void main()
     float s = rgba.b;
 
 
-    
-    if(value.g > 0.0000001f) //my addition, maybe not the best, but map doesn't appear without it
+    //if initialized channels yxw of texture0 to 0.0f, this out condition may not be neccessary 
+    if(value.g > 0.00001f) //my addition, maybe not the best, but map doesn't appear without it
     {
         if (C > s) //dissolve soil into water
         {
