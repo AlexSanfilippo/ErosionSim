@@ -56,7 +56,7 @@ void main()
     float radius = 0.05f; //radius of water source, square map side length = 2.0f
     float strength = 2.9f; //how much water to add //very unsure how strong this is, probably want value < 1.0f
     float MAXWATER =  0.3f;
-    value.y = min(rgba.y + dT*strength * max(0.0f, radius - distance(source, normCoord)), MAXWATER);
+    //value.y = min(rgba.y + dT*strength * max(0.0f, radius - distance(source, normCoord)), MAXWATER);
 
 
     //RAIN 
@@ -64,7 +64,7 @@ void main()
     radius = 0.09f;
     strength = 1.9f;
     source = rainPos;
-    //value.y = min(rgba.y + dT * strength * max(0.0f, radius - distance(source, normCoord)), MAXWATER);
+    value.y = min(rgba.y + dT * strength * max(0.0f, radius - distance(source, normCoord)), MAXWATER);
     
 
     //old rain

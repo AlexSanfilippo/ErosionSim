@@ -227,7 +227,7 @@ int main()
         for (int j = 0; j < size; j++) {
             
             //actual height map
-            //justHeights[i * size + j] = map.heights[i * size + j]; //normalized height values [0,1]
+            justHeights[i * size + j] = map.heights[i * size + j]; //normalized height values [0,1]
             //bowl map
             //justHeights[i * size + j] = sqrt(pow(float(i) - float(size)/2.0f,2) + pow(float(j) - float(size) / 2.0f, 2))/64.f;
             //bowl map-more round
@@ -244,7 +244,7 @@ int main()
             }
             */
             //cliff double    
-            
+            /*
             if (float(i) > 0.6f*float(size)) {
                 justHeights[i * size + j] = float(i) / float(size) + 0.5f;
             }
@@ -254,7 +254,7 @@ int main()
             else {
                 justHeights[i * size + j] = 0.5f; 
             }
-            
+            */
 
 
             initVel[i * size + j] = 0.0f;
