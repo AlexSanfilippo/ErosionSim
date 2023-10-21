@@ -52,8 +52,8 @@ void main()
     //TEXTURE VERSION WORKING
     vec2 TexCoords = vec2(aTexCoord.y, aTexCoord.x);
     vec4 texCol = texture(tex, TexCoords).rgba;
-    //gl_Position = projection * view * model * vec4(aPos.x, texCol.r + texCol.g, aPos.z, 1.0); //incl. water height on mesh
-    gl_Position = projection * view * model * vec4(aPos.x, texCol.r, aPos.z, 1.0); //water height not displayed on mesh
+    gl_Position = projection * view * model * vec4(aPos.x, texCol.r + texCol.g, aPos.z, 1.0); //incl. water height on mesh
+    //gl_Position = projection * view * model * vec4(aPos.x, texCol.r, aPos.z, 1.0); //water height not displayed on mesh
     
 
     //TERRAIN COLOR DEFINTIONS
@@ -84,7 +84,7 @@ void main()
    
 
     //COLOR BY NORMAL
-    //ourColor = texNorm;  //GPU normals 
+    ourColor = texNorm;  //GPU normals 
     //ourColor = vec3(1.0, 0.0, 0.0);
     //ourColor = 1.f*aNorm;  //CPU normals- not to be used anymore, code kept as refr.
     //ourColor = -1.f*vec3(0.0f, aNorm.g, 0.0f);
@@ -95,16 +95,12 @@ void main()
     //ourColor = vec3(trueTilt); //blacker is flatter
 
 
+    /*
+
     //SabastionLague-like Version
     //-------------
-    
-    
-    
-    float grassSlopeThreshold = 0.09; //(sin(time*0.8f)+1.f)/2.f;
+    float grassSlopeThreshold = 0.12; //(sin(time*0.8f)+1.f)/2.f;
     float grassBlendAmount = 0.999;
-    
-
-
     //change 3 instances of texNorm/aNorm below to turn on/off normal vector texture's effect
     vec3 tempNormVal = texNorm; //texNorm
     //float slope = 1.0f - -1.f * tempNormVal.y;
@@ -115,16 +111,17 @@ void main()
     float grassWeight = 1.0f-clamp((slope-grassBlendHeight)/(grassSlopeThreshold-grassBlendHeight),0.0f, 1.0f);
     ourColor = 1.25f*flatColor*clamp((1.0f-1.0f*aPos.y),0.33,.8)*(0.5f+tempNormVal.y)* grassWeight + 2.5f*(clamp(tempNormVal.y,.25f,0.99f)*(1.0f-grassWeight)*vertColor) - 0.25f*(clamp(tempNormVal.x,.25f,0.99f)*(1.0f-grassWeight)*vertColor); //*tilt*2.25
     
+    */
     
     
     //outer condition colors water blue
-    
+    /*
     if(texCol.g > 0.0001){
         //ourColor = mix(ourColor, vec3(0.f, 0.2f, max(texCol.g,0.45)), 0.25+texCol.g);
         //ourColor = mix(0.6f*ourColor, vec3(0.f, 0.2f, 0.45), 0.25+texCol.g); //attempt at transparent water
         ourColor = mix(mix(ourColor, vec3(0.5f, 0.5f, 0.85)*texNorm, 0.0+texCol.g), vec3(0.f, 0.2f, 0.45), 0.75f + texCol.g); //simple depth color
     }
-    
+    */
     
     
     if(texCol.g > 0.0000001f){
